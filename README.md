@@ -13,13 +13,13 @@ These nodes have been developed and tested across various scenarios, designed to
 Nodes that include additional settings can be accessed via the menu `ComfyUI > Settings > OTHER > VicNodes`.
 
 This are the nodes created and compiled into this collection so far; to understand what each node does, consult the links below:
--[ComfyUI Hybrid Sampler](./modules/hybrid_sampler); standalone [page](https://github.com/VictorDmAlves/comfyui-hybrid-sampler).
--[ComfyUI Keyword Wildcard Processor](./modules/keyword_wildcard_processor); standalone [page](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor).
--[ComfyUI Load Multi Image](./modules/load_multi_image); standalone [page](https://github.com/VictorDmAlves/comfyui-load-multi-image).
--[ComfyUI MOSS Smart Sampler](./modules/moss_smart_sampler); standalone [page](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler).
--[ComfyUI Ollama Bridge](./modules/ollama_bridge); standalone [page](https://github.com/VictorDmAlves/comfyui_ollama_bridge).
--[ComfyUI Persistent Save Image](./modules/persistent_save_image); standalone [page](https://github.com/VictorDmAlves/comfyui-persistent-save-image).
--[ComfyUI Spatial LoRA](./modules/spatial_lora); standalone [page](https://github.com/VictorDmAlves/comfyui-spatial-lora).
+- [ComfyUI Hybrid Sampler](./modules/hybrid_sampler); standalone [page](https://github.com/VictorDmAlves/comfyui-hybrid-sampler).
+- [ComfyUI Keyword Wildcard Processor](./modules/keyword_wildcard_processor); standalone [page](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor).
+- [ComfyUI Load Multi Image](./modules/load_multi_image); standalone [page](https://github.com/VictorDmAlves/comfyui-load-multi-image).
+- [ComfyUI MOSS Smart Sampler](./modules/moss_smart_sampler); standalone [page](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler).
+- [ComfyUI Ollama Bridge](./modules/ollama_bridge); standalone [page](https://github.com/VictorDmAlves/comfyui_ollama_bridge).
+- [ComfyUI Persistent Save Image](./modules/persistent_save_image); standalone [page](https://github.com/VictorDmAlves/comfyui-persistent-save-image).
+- [ComfyUI Spatial LoRA](./modules/spatial_lora); standalone [page](https://github.com/VictorDmAlves/comfyui-spatial-lora).
 
 ## Latest release
 ### 1.0
