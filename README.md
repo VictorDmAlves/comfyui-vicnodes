@@ -22,9 +22,9 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Spatial LoRA](./modules/spatial_lora); standalone [page](https://github.com/VictorDmAlves/comfyui-spatial-lora).
 
 ## Latest release
-### 1.0
+### 1.1
 Added
-- Initial commit
+- ComfyUI Manager registry
 
 # Installation
 
