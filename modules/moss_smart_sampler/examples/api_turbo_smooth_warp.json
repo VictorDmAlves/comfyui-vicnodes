@@ -1,0 +1,121 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "moss_image_sft_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3.5_9b_w4a8_gptq.safetensors",
+      "type": "moss_image"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux2-vae_small.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "text": "A natural documentary photograph of an adult woman standing outdoors in diffuse daylight, anatomically correct hands, realistic skin texture, subtle pores, detailed hair, true-to-life colors."
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "text": ""
+    }
+  },
+  "6": {
+    "class_type": "EmptyFlux2LatentImage",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "7": {
+    "class_type": "MOSSSmartSampler",
+    "inputs": {
+      "model": [
+        "10",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ],
+      "seed": 42,
+      "preset": "Turbo",
+      "steps": 0,
+      "cfg": 0.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "sigma_strategy": "Smooth Warp",
+      "refinement_bias": 0.0,
+      "denoise": 1.0,
+      "add_noise": true,
+      "sigma_strength": 0.5
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ],
+      "filename_prefix": "MOSS_Smart_Turbo_smooth_warp"
+    }
+  },
+  "10": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ],
+      "lora_name": "REPLACE_WITH_YOUR_MOSS_TURBO_LORA.safetensors",
+      "strength_model": 1.0,
+      "strength_clip": 0.0
+    }
+  }
+}

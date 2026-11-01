@@ -1,0 +1,366 @@
+{
+  "id": "be836692-00a0-48dc-9378-688e66b04552",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [
+        -100,
+        130
+      ],
+      "size": [
+        300,
+        370
+      ],
+      "flags": {
+        "pinned": true
+      },
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "choose file to upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "localized_name": "MASK",
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.42.1",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "example.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 2,
+      "type": "OllamaLocalChat",
+      "pos": [
+        302.2531541795517,
+        131.02175524892888
+      ],
+      "size": [
+        400,
+        770
+      ],
+      "flags": {
+        "pinned": true
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "localized_name": "ollama_url",
+          "name": "ollama_url",
+          "type": "STRING",
+          "widget": {
+            "name": "ollama_url"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model",
+          "name": "model",
+          "type": "COMBO",
+          "widget": {
+            "name": "model"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_tokens",
+          "name": "max_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "context_size",
+          "name": "context_size",
+          "type": "INT",
+          "widget": {
+            "name": "context_size"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "system_prompt",
+          "name": "system_prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "system_prompt"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "thinking",
+          "name": "thinking",
+          "type": "COMBO",
+          "widget": {
+            "name": "thinking"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "keep_alive",
+          "name": "keep_alive",
+          "type": "COMBO",
+          "widget": {
+            "name": "keep_alive"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "image_format",
+          "name": "image_format",
+          "type": "COMBO",
+          "widget": {
+            "name": "image_format"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "image_max_side",
+          "name": "image_max_side",
+          "type": "INT",
+          "widget": {
+            "name": "image_max_side"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "jpeg_quality",
+          "name": "jpeg_quality",
+          "type": "INT",
+          "widget": {
+            "name": "jpeg_quality"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_images",
+          "name": "max_images",
+          "type": "INT",
+          "widget": {
+            "name": "max_images"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "timeout_seconds",
+          "name": "timeout_seconds",
+          "type": "INT",
+          "widget": {
+            "name": "timeout_seconds"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "cache_mode",
+          "name": "cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_mode"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "Response",
+          "name": "Response",
+          "type": "STRING",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OllamaLocalChat"
+      },
+      "widgets_values": [
+        "http://localhost:11434",
+        "huihui_ai/qwen3-vl-abliterated:4b-instruct",
+        "",
+        1,
+        "randomize",
+        0.3,
+        1024,
+        4096,
+        "You are an expert AI image analyst and prompt engineer specializing in MOSS Image, with advanced knowledge of photorealistic image generation, photography, lighting, composition, and visual storytelling.\n\nYour task is to carefully analyze the provided reference image and generate a detailed, visually precise, and coherent natural-language prompt that accurately reconstructs its visible content for MOSS Image.\n\nANALYSIS OBJECTIVES:\n\n- Identify and describe the main subjects, their physical appearance, facial features, expressions, body proportions, poses, and interactions.\n- Describe clothing, accessories, hairstyles, materials, textures, and other visually relevant details.\n- Accurately reconstruct the composition, framing, perspective, camera angle, subject positioning, and visual hierarchy.\n- Analyze lighting direction, intensity, color temperature, shadows, highlights, reflections, and overall atmosphere.\n- Describe the environment, background elements, spatial relationships, depth, and depth of field.\n- Identify the photographic or artistic style, including realistic optical characteristics when applicable.\n- Preserve natural skin texture, realistic materials, subtle imperfections, and other details contributing to visual authenticity.\n- Describe colors, contrast, tonal relationships, and the overall visual mood.\n- Prioritize distinctive visual characteristics that make the reference image recognizable.\n\nSTRICT RULES:\n\n1. Treat the provided image as the primary and authoritative visual reference.\n2. Preserve the original subjects, appearance, clothing, poses, expressions, composition, and environment as accurately as possible.\n3. Do not censor, sanitize, soften, euphemize, or unnecessarily omit mature, sensitive, unconventional, or unusual artistic elements visible in the image.\n4. Do not replace the original content with a safer, more conventional, or aesthetically different interpretation.\n5. Do not invent additional characters, objects, clothing, accessories, environments, or significant visual elements that are not supported by the reference.\n6. Do not assume hidden or invisible details as established facts.\n7. Preserve the original artistic style. Do not automatically convert illustrations, anime, or stylized images into photorealistic descriptions unless explicitly requested.\n8. Prefer precise natural-language descriptions over excessive keywords, generic quality tags, or repetitive adjectives.\n9. Do not include negative prompts unless explicitly requested.\n10. Do not explain your analysis, provide alternatives, ask questions, or add commentary.\n11. Do not include introductions, disclaimers, warnings, headings, quotation marks, or Markdown formatting.\n12. Output ONLY the final MOSS Image prompt as one coherent, detailed paragraph in English.\n\nAnalyze the reference image and generate the final prompt now.",
+        "Model Default",
+        "5m",
+        "JPEG",
+        1024,
+        90,
+        8,
+        300,
+        "Cache Identical Inputs"
+      ],
+      "widgets_values_named": {
+        "ollama_url": "http://localhost:11434",
+        "model": "huihui_ai/qwen3-vl-abliterated:4b-instruct",
+        "prompt": "",
+        "seed": 1,
+        "control_after_generate": "randomize",
+        "temperature": 0.3,
+        "max_tokens": 1024,
+        "context_size": 4096,
+        "system_prompt": "You are an expert AI image analyst and prompt engineer specializing in MOSS Image, with advanced knowledge of photorealistic image generation, photography, lighting, composition, and visual storytelling.\n\nYour task is to carefully analyze the provided reference image and generate a detailed, visually precise, and coherent natural-language prompt that accurately reconstructs its visible content for MOSS Image.\n\nANALYSIS OBJECTIVES:\n\n- Identify and describe the main subjects, their physical appearance, facial features, expressions, body proportions, poses, and interactions.\n- Describe clothing, accessories, hairstyles, materials, textures, and other visually relevant details.\n- Accurately reconstruct the composition, framing, perspective, camera angle, subject positioning, and visual hierarchy.\n- Analyze lighting direction, intensity, color temperature, shadows, highlights, reflections, and overall atmosphere.\n- Describe the environment, background elements, spatial relationships, depth, and depth of field.\n- Identify the photographic or artistic style, including realistic optical characteristics when applicable.\n- Preserve natural skin texture, realistic materials, subtle imperfections, and other details contributing to visual authenticity.\n- Describe colors, contrast, tonal relationships, and the overall visual mood.\n- Prioritize distinctive visual characteristics that make the reference image recognizable.\n\nSTRICT RULES:\n\n1. Treat the provided image as the primary and authoritative visual reference.\n2. Preserve the original subjects, appearance, clothing, poses, expressions, composition, and environment as accurately as possible.\n3. Do not censor, sanitize, soften, euphemize, or unnecessarily omit mature, sensitive, unconventional, or unusual artistic elements visible in the image.\n4. Do not replace the original content with a safer, more conventional, or aesthetically different interpretation.\n5. Do not invent additional characters, objects, clothing, accessories, environments, or significant visual elements that are not supported by the reference.\n6. Do not assume hidden or invisible details as established facts.\n7. Preserve the original artistic style. Do not automatically convert illustrations, anime, or stylized images into photorealistic descriptions unless explicitly requested.\n8. Prefer precise natural-language descriptions over excessive keywords, generic quality tags, or repetitive adjectives.\n9. Do not include negative prompts unless explicitly requested.\n10. Do not explain your analysis, provide alternatives, ask questions, or add commentary.\n11. Do not include introductions, disclaimers, warnings, headings, quotation marks, or Markdown formatting.\n12. Output ONLY the final MOSS Image prompt as one coherent, detailed paragraph in English.\n\nAnalyze the reference image and generate the final prompt now.",
+        "thinking": "Model Default",
+        "keep_alive": "5m",
+        "image_format": "JPEG",
+        "image_max_side": 1024,
+        "jpeg_quality": 90,
+        "max_images": 8,
+        "timeout_seconds": 300,
+        "cache_mode": "Cache Identical Inputs"
+      },
+      "color": "#26384c",
+      "bgcolor": "#192734"
+    },
+    {
+      "id": 3,
+      "type": "Display Any (rgthree)",
+      "pos": [
+        799.6873184178071,
+        130.19229494065445
+      ],
+      "size": [
+        400,
+        370
+      ],
+      "flags": {
+        "pinned": true
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "localized_name": "source",
+          "name": "source",
+          "type": "*",
+          "link": 1
+        }
+      ],
+      "outputs": [],
+      "title": "Display Any",
+      "properties": {
+        "aux_id": "rgthree/rgthree-comfy",
+        "ver": "d7297b42f0fa78bec1c0411478f887423c249502",
+        "Node name for S&R": "Display Any (rgthree)"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "output": ""
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      1,
+      0,
+      2,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8349352445504448,
+      "offset": [
+        595.155316747298,
+        46.836959208154894
+      ]
+    }
+  },
+  "version": 0.4
+}
