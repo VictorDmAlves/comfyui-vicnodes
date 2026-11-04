@@ -20,14 +20,15 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Ollama Bridge](./modules/ollama_bridge).
 - [ComfyUI Persistent Save Image](./modules/persistent_save_image).
 - [ComfyUI Spatial LoRA](./modules/spatial_lora).
+- [ComfyUI Flux Klein Text Encode](./modules/flux_klein_text_encode).
 
 Standalone pages:
-[ComfyUI Hybrid Sampler](https://github.com/VictorDmAlves/comfyui-hybrid-sampler) | [ComfyUI Keyword Wildcard Processor](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor) | [ComfyUI Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) | [ComfyUI MOSS Smart Sampler](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler) | [ComfyUI Ollama Bridge](https://github.com/VictorDmAlves/comfyui_ollama_bridge) | [ComfyUI Persistent Save Image](https://github.com/VictorDmAlves/comfyui-persistent-save-image) | [ComfyUI Spatial LoRA](https://github.com/VictorDmAlves/comfyui-spatial-lora)
+[ComfyUI Hybrid Sampler](https://github.com/VictorDmAlves/comfyui-hybrid-sampler) | [ComfyUI Keyword Wildcard Processor](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor) | [ComfyUI Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) | [ComfyUI MOSS Smart Sampler](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler) | [ComfyUI Ollama Bridge](https://github.com/VictorDmAlves/comfyui_ollama_bridge) | [ComfyUI Persistent Save Image](https://github.com/VictorDmAlves/comfyui-persistent-save-image) | [ComfyUI Spatial LoRA](https://github.com/VictorDmAlves/comfyui-spatial-lora) | [ComfyUI Flux Klein Text Encode](https://github.com/VictorDmAlves/comfyui-flux-klein-text-encode)
 
 ## Latest release
-### 1.1
+### 1.2
 Added
-- ComfyUI Manager registry
+- Integration with the new `custom_node` ComfyUI Flux Klein Text Encode
 
 # Installation
 

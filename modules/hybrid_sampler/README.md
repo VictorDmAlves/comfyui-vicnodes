@@ -28,7 +28,7 @@ git clone https://github.com/VictorDmAlves/comfyui-hybrid-sampler.git
 2. Extract it into `ComfyUI/custom_nodes/`.
 3. Make sure the final structure is not nested twice.
 
-Restart ComfyUI and add **Hybrid Sampler** from `sampling/custom_sampling`.
+Restart ComfyUI and add **Hybrid Sampler** from `extensions/VicNodes/Hybrid Sampler`.
 
 ## Inputs
 | Standard inputs | Type |

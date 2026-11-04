@@ -58,11 +58,7 @@ ComfyUI/
         └── web/
 ```
 
-Restart ComfyUI after installation. The node is available at:
-
-```text
-Wildcards → Keyword Wildcard Processor
-```
+Restart ComfyUI and add **Keyword Wildcard Processor** from `extensions/VicNodes/Keyword Wildcard Processor`.
 
 ## Quick start
 Create a Wildcard file in the Impact Pack Wildcard directory:

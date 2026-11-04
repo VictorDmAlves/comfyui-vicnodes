@@ -60,7 +60,7 @@ git clone https://github.com/VictorDmAlves/comfyui-spatial-lora.git
 2. Remove older copies of this plugin from `custom_nodes` to prevent duplicate installations
 3. Restart ComfyUI and hard-refresh the browser (`Ctrl+F5`)
 
-Find the node under **Spatial LoRA → Multi LoRA**.
+Restart ComfyUI and add **Spatial LoRA | Multi LoRA** from `extensions/VicNodes/Spatial LoRA`.
 
 ## Quick start
 ![Spatial LoRA quick connections](./images/quick-setup.png)

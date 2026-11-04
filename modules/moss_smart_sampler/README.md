@@ -35,7 +35,7 @@ git clone https://github.com/VictorDmAlves/comfyui-ollama-bridge
 2. Extract it into `ComfyUI/custom_nodes/`.
 3. Make sure the final structure is not nested twice.
 
-Start ComfyUI and add **MOSS Smart Sampler** under `sampling/MOSS Smart Sampler`.
+Restart ComfyUI and add **MOSS Smart Sampler** from `extensions/VicNodes/MOSS Smart Sampler`.
 
 Use a sufficiently recent ComfyUI build with native MOSS-Image support and the selected samplers available. No extra Python packages are installed by this node beyond ComfyUI's own dependencies.
 

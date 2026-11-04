@@ -64,13 +64,7 @@ ComfyUI/
         └── web/
 ```
 
-Restart ComfyUI completely and hard-refresh the browser once.
-
-The node is available at:
-
-```text
-image → Persistent Save Image
-```
+Restart ComfyUI and add **Persistent Save Image** from `Comfy Nodes/VicNodes/Persistent Save Image`.
 
 Connect it exactly as you would connect ComfyUI's native **Save Image** node.
 

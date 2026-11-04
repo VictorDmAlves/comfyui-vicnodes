@@ -47,6 +47,8 @@ ComfyUI/
         └── README.md
 ```
 
+Restart ComfyUI and add **Ollama Bridge (Local)** from `extensions/VicNodes/Ollama Bridge`.
+
 ## Utilization
 1. Make sure [Ollama](https://ollama.com/) is installed and running on the computer running the **ComfyUI backend**.
 2. Download a model, for example `ollama pull gemma3:4b` (choose a model that supports images if you want vision input).

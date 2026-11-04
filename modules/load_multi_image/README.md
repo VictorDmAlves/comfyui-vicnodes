@@ -39,9 +39,7 @@ git clone https://github.com/VictorDmAlves/comfyui-load-multi-image.git
 2. Extract it into `ComfyUI/custom_nodes/`.
 3. Make sure the final structure is not nested twice.
 
-Restart ComfyUI completely and hard-refresh the browser once.
-
-Search for **Load Multi Image** in the Add Node menu (category `image/loaders`).
+Restart ComfyUI and add **Load Multi Image** from `extensions/VicNodes/Load Multi Image`.
 
 ## Quick start
 1. In slot 1, select an existing image using the filename picker, click **Upload / Replace**, or drop an image onto the node.
