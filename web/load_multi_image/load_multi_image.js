@@ -1,5 +1,5 @@
 /**
- * Load Multi Image v1.0.7
+ * Load Multi Image v1.0.8
  * A lightweight LiteGraph UI: one visible image picker + preview, with
  * explicit pairs of IMAGE and MASK output ports for the added slots.
  */
@@ -443,6 +443,53 @@ function addPairedButtons(node, name, left, right) {
     return widget;
 }
 
+// Use the *rendered* position of the last control to place the preview.
+// node.computeSize() can count hidden backend image widgets on some ComfyUI
+// frontend releases and leave a large blank band above an empty preview.
+function lastControlBottom(node) {
+    const control = uiState(node)?.upload; // Last widget in this version.
+    if (!control) return null;
+    const y = [control.y, control.last_y].find((value) =>
+        Number.isFinite(value) && value > 0);
+    if (!Number.isFinite(y)) return null;
+    const measuredHeight = control.computedHeight;
+    const height = Number.isFinite(measuredHeight) && measuredHeight >= 16 && measuredHeight <= 64
+        ? measuredHeight : 20;
+    return Math.ceil(y + height);
+}
+
+function previewPosition(node, computedMinHeight) {
+    const bottom = lastControlBottom(node);
+    if (bottom != null) return Math.max(80, bottom + 8);
+    // Until the canvas lays out widgets the first time, keep the old safe
+    // position. Once widget.y is available, the preview snaps to the controls.
+    return Math.max(210, Math.ceil((computedMinHeight ?? 245) + 8));
+}
+
+// Layout positions are finalized by LiteGraph only after the node widgets are
+// attached. Adjust on render when that final position first becomes available.
+// Respect the saved/manual height exactly as in v1.0.5-v1.0.7.
+function alignPreviewToControls(node) {
+    const state = uiState(node);
+    if (!state || node.flags?.collapsed) return;
+    const bottom = lastControlBottom(node);
+    if (bottom == null) return;
+    const top = Math.max(80, bottom + 8);
+    if (Math.abs(top - state.previewTop) <= 1) return;
+
+    const wasAutoFitted = state.autoSize && Number.isFinite(state.autoHeight) &&
+        Math.abs(node.size[1] - state.autoHeight) <= 1;
+    const requiredHeight = top + PREVIEW_MIN_HEIGHT + PREVIEW_MARGIN;
+    state.previewTop = top;
+    state.autoHeight = requiredHeight;
+    state.autoSize = wasAutoFitted;
+    const nextHeight = wasAutoFitted ? requiredHeight : Math.max(node.size[1], requiredHeight);
+    if (Math.abs(node.size[1] - nextHeight) > 1) {
+        node.setSize?.([node.size[0], nextHeight]);
+    }
+    markChanged(node);
+}
+
 function refreshUI(node, layoutMode = "update") {
     const state = uiState(node);
     if (!state) return;
@@ -458,8 +505,8 @@ function refreshUI(node, layoutMode = "update") {
     node.title = `${BASE_TITLE}  [${state.current + 1}/${state.count}]`;
     node.__mimgTooltip = fileLabel;
     const minimum = node.computeSize?.() ?? [290, 245];
-    // Keep the preview strictly below widgets/ports, so it cannot hide inputs.
-    state.previewTop = Math.max(210, Math.ceil(minimum[1] + 8));
+    // Place the preview immediately below the last visible control.
+    state.previewTop = previewPosition(node, minimum[1]);
     const neededHeight = state.previewTop + PREVIEW_MIN_HEIGHT + PREVIEW_MARGIN;
     // v1.0.5: A newly created node is compact, but a manually resized node
     // must keep its saved height just like the built-in Load Image node.
@@ -649,6 +696,7 @@ function attachUI(node, maximum) {
     const originalDrawForeground = node.onDrawForeground;
     node.onDrawForeground = function (...args) {
         originalDrawForeground?.apply(this, args);
+        alignPreviewToControls(this);
         drawPreview(this, args[0]);
     };
 
@@ -668,12 +716,12 @@ function attachUI(node, maximum) {
           action: (n) => selectSlot(n, uiState(n).current - 1) },
         { text: () => "Next ▶", enabled: (s) => s.current < s.count - 1,
           action: (n) => selectSlot(n, uiState(n).current + 1) });
-    state.upload = node.addWidget("button", "Upload / Replace", "Upload", () => pickFiles(node), options);
     state.slotActions = addPairedButtons(node, "Image slot actions",
         { text: () => "+ Add", enabled: (s) => s.count < s.max,
           action: (n) => addSlot(n) },
         { text: (s) => s.count > 1 ? "− Remove" : "− Clear",
           enabled: () => true, action: (n) => removeLast(n) });
+    state.upload = node.addWidget("button", "Upload / Replace", "Upload", () => pickFiles(node), options);
     // Trim the backend's full set of ports BEFORE computing the initial
     // preview position. Otherwise the first one-image node reserves vertical
     // space for five image/mask pairs until a second slot is added.

@@ -9,9 +9,10 @@
 An enhanced **Load Image** node with multiple independent image slots and compact navigation.
 
 ## Latest release
-### 1.0
-Added
-- Initial commit.
+### 1.1
+Update
+- Removed the empty space that existed between the selectors and the image in the node.
+- Reordered the selectors and button on the node.
 
 ## Features
 - One node for up to **5 images** by default; configurable from 1 to 32.

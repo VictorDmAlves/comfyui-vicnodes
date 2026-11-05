@@ -1,4 +1,4 @@
-"""Load Multi Image (v1.0.7) -- VicNodes module."""
+"""Load Multi Image (v1.0.8) -- VicNodes module."""
 from .load_multi_image import LoadMultiImage
 
 NODE_CLASS_MAPPINGS = {
