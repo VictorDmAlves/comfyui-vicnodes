@@ -87,7 +87,7 @@ def test_node_only_has_native_sigma_strategies_and_no_integration(plugin):
     from inspect import signature
     node = pkg.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
     schema = node.INPUT_TYPES()
-    assert schema["required"]["preset"][0] == ["Fast","Balanced","Realism","Quality","Turbo"]
+    assert schema["required"]["preset"][0] == ["Fast","Balanced","Realism","Quality","Turbo","Custom"]
     assert schema["required"]["sigma_strategy"][0] == ["Native Reference","Stage Weighted","Smooth Warp"]
     assert schema["required"]["sampler_name"][0] == ["euler","er_sde","sa_solver"]
     assert schema["required"]["scheduler"][0] == ["simple","sgm_uniform","beta"]

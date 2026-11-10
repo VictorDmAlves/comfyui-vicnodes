@@ -11,9 +11,19 @@
 It is especially useful for Workflows that use Wildcards, dynamic prompts, and multiple queued executions with `batch_size = 1`. In that setup, every queued prompt can receive a different seed while the node still displays the latest results together in one gallery.
 
 ## Latest release
-### 1.0
+### 1.1.2
+Update
+- **Download All** now downloads the original images individually, with no ZIP file or folders. The browser manages multiple-download permission and filename collisions.
+- Missing images are skipped before starting downloads. Both buttons and the image-preview spacing remain unchanged.
+
+### 1.1.1
+Fixed
+- Reserved a dedicated layout area for the Reset Gallery and Download All buttons, preventing the image preview from overlapping them. Button styling and size are unchanged.
+
+### 1.1
 Added
-- Initial commit
+- **Download All**: initial ZIP download feature (changed to individual downloads in v1.1.2).
+- **Reset Gallery** and **Download All** now share one row, each using half the available width.
 
 ## Features
 - Saves PNG files through ComfyUI's native `SaveImage` implementation.
@@ -28,47 +38,9 @@ Added
   - closing and reopening a Workflow;
   - restarting ComfyUI.
 - Uses ComfyUI's native image preview grid and image viewer/lightbox.
-- Adds a **Reset Galleria** button directly to the node.
+- Adds side-by-side **Reset Gallery** and **Download All** buttons directly to the node.
 - Stores only small JSON references. Image data is not duplicated in browser storage or inside the custom node directory.
 - Keeps separate galleries for separate node instances, as long as each node has a unique `gallery_id`.
-
-## Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-persistent-save-image
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Correct:
-
-```text
-ComfyUI/
-└── custom_nodes/
-    └── comfyui-persistent-save-image/
-        ├── __init__.py
-        ├── config.py
-		├── gallery_store.py
-		├── persistent_save_image.py
-		├── LICENSE
-		├── README.md
-		├── __pycache__
-		├── images/
-        └── web/
-```
-
-Restart ComfyUI and add **Persistent Save Image** from `Comfy Nodes/VicNodes/Persistent Save Image`.
-
-Connect it exactly as you would connect ComfyUI's native **Save Image** node.
-
-No additional Python packages are required.
 
 ## Configuration
 Open `config.py` to change the maximum number of images retained by each gallery:
@@ -139,6 +111,15 @@ After a reset:
 - Previously saved PNG files remain on disk;
 - The node no longer lists those files in its persistent preview;
 - Newly generated images begin a new gallery history using the same `gallery_id`.
+
+## Download All
+Click **Download All** to start a separate browser download for **each existing image** in that node's current persistent gallery. Files are downloaded individually with their original filenames, **not** bundled into a ZIP and **without** creating subfolders. The browser decides the destination according to its download settings.
+
+- The browser may ask you to **allow multiple downloads** from ComfyUI. That permission prompt is controlled by the browser, not the plugin; blocked downloads can be retried after granting permission in the browser.
+- It does **not** reset the gallery, delete files, or generate new PNGs: images were already saved by ComfyUI.
+- If an image was manually deleted from `output`, it is skipped after checking that the original file still exists. If no image files remain, the node displays an alert.
+- Only images in the **current gallery** (up to `MAX_GALLERY_IMAGES`) are downloaded, not older images that have already rolled out of the gallery.
+- If two images from different ComfyUI output subfolders have the same basename, the browser handles filename collisions according to its usual download rules.
 
 ## Filename prefixes and metadata
 The node preserves the normal behavior of ComfyUI's **Save Image** node, including:

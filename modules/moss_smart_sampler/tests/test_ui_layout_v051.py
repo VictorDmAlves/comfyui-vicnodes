@@ -20,7 +20,7 @@ def test_presets_and_choices_unchanged(plugin):
     package, _ = plugin
     node = package.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
     r = node.INPUT_TYPES()["required"]
-    assert r["preset"][0] == ["Fast", "Balanced", "Realism", "Quality", "Turbo"]
+    assert r["preset"][0] == ["Fast", "Balanced", "Realism", "Quality", "Turbo", "Custom"]
     assert r["sampler_name"][0] == ["euler", "er_sde", "sa_solver"]
     assert r["scheduler"][0] == ["simple", "sgm_uniform", "beta"]
     assert r["sigma_strategy"][0] == ["Native Reference", "Stage Weighted", "Smooth Warp"]

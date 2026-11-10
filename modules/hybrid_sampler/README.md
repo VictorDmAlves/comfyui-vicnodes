@@ -13,23 +13,6 @@ A compact KSampler-style alternative to SamplerCustomAdvanced, with optional com
 Added
 - Initial commit
 
-# Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-hybrid-sampler.git
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Restart ComfyUI and add **Hybrid Sampler** from `extensions/VicNodes/Hybrid Sampler`.
-
 ## Inputs
 | Standard inputs | Type |
 |---|---|

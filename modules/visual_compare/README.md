@@ -15,23 +15,6 @@ Designed for comparing image generations, samplers, upscalers, LoRA outputs, and
 Added
 - Initial commit
 
-# Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-visual-compare.git
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Restart ComfyUI and add **Visual Compare** from `extensions/VicNodes/Visual Compare`.
-
 ## Features
 | Feature | How it works |
 | --- | --- |

@@ -15,40 +15,6 @@ No API keys, cloud account, or extra Python packages are required beyond the dep
 Update
 - Removed the `get_models(DEFAULT_URL)` every time the custom_node is initialize in ComfyUI; you will need to use the `Edit > Ollama: Refresh Models` option to update the list with the models installed in your Ollama.
 
-## Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-ollama-bridge
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Correct:
-
-```text
-ComfyUI/
-└── custom_nodes/
-    └── comfyui-ollama-bridge/
-        ├── images/
-        ├── tests/
-        ├── web/
-        ├── workflow/
-        ├── __init__.py
-        ├── LICENSE
-        ├── node.py
-        ├── ollama.py
-        └── README.md
-```
-
-Restart ComfyUI and add **Ollama Bridge (Local)** from `extensions/VicNodes/Ollama Bridge`.
-
 ## Utilization
 1. Make sure [Ollama](https://ollama.com/) is installed and running on the computer running the **ComfyUI backend**.
 2. Download a model, for example `ollama pull gemma3:4b` (choose a model that supports images if you want vision input).

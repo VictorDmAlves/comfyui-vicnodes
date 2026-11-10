@@ -68,15 +68,16 @@
       ],
       "seed": 42,
       "preset": "Turbo",
-      "steps": 0,
-      "cfg": 0.0,
+      "steps": 8,
+      "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "simple",
       "sigma_strategy": "Stage Weighted",
       "refinement_bias": 0.0,
       "denoise": 1.0,
       "add_noise": true,
-      "sigma_strength": 0.5
+      "sigma_strength": 0.5,
+      "custom_base_preset": "Turbo"
     }
   },
   "8": {

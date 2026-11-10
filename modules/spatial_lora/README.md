@@ -46,22 +46,6 @@ Unfortunately, the models I’ve selected are based on the limitations of my own
 
 **Example Workflows** also contain separate custom nodes (see [workflows/README.md](workflows/README.md)); those are optional and not plugin requirements.
 
-## Installation
-
-### Git
-Inside `ComfyUI/custom_nodes/`, clone this repository:
-
-```bash
-git clone https://github.com/VictorDmAlves/comfyui-spatial-lora.git
-```
-
-### ZIP
-1. Download this repository as a ZIP and extract the `ComfyUI-Spatial-LoRA` folder to `ComfyUI/custom_nodes/`
-2. Remove older copies of this plugin from `custom_nodes` to prevent duplicate installations
-3. Restart ComfyUI and hard-refresh the browser (`Ctrl+F5`)
-
-Restart ComfyUI and add **Spatial LoRA | Multi LoRA** from `extensions/VicNodes/Spatial LoRA`.
-
 ## Quick start
 ![Spatial LoRA quick connections](./images/quick-setup.png)
 

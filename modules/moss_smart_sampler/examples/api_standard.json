@@ -68,15 +68,16 @@
       ],
       "seed": 42,
       "preset": "Balanced",
-      "steps": 0,
-      "cfg": 0.0,
+      "steps": 35,
+      "cfg": 4.0,
       "sampler_name": "euler",
       "scheduler": "simple",
       "sigma_strategy": "Native Reference",
       "refinement_bias": 0.0,
       "denoise": 1.0,
       "add_noise": true,
-      "sigma_strength": 1.0
+      "sigma_strength": 1.0,
+      "custom_base_preset": "Balanced"
     }
   },
   "8": {

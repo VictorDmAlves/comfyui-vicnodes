@@ -10,6 +10,14 @@ A focused sampler node for **MOSS-Image Base, SFT and Turbo(LoRA)** in ComfyUI. 
 
 > **Quality notice:** Sampling schedules produce different results, not guaranteed improvements. Tests have shown some aesthetically appealing variations and some regressions. Compare fixed prompts and seeds before using a strategy as your default.
 
+## Latest release
+### 1.1.0
+- New nodes start with **Balanced / Steps 35 / CFG 4.0** (not 0/0).
+- Selecting a preset fills the actual Steps/CFG values.
+- Manual changes to Steps or CFG change the visible preset to **Custom**.
+- Custom retains the last chosen sigma profile, including the **Turbo** engine.
+- Old API-format workflows with named presets and 0/0 Auto inputs still execute as before; the frontend converts those fields to their effective values when loading.
+
 ## Features
 - Single node; no additional helper nodes, subgraphs or Nodes 2.0 required.
 - Five presets with editable step count and CFG: **Fast, Balanced, Realism, Quality, Turbo**.
@@ -19,25 +27,6 @@ A focused sampler node for **MOSS-Image Base, SFT and Turbo(LoRA)** in ComfyUI. 
 - Native scheduler choices (best one cases): **simple**, **sgm_uniform**, **beta**.
 - Respects the incoming MODEL's sampling shift; does not reapply shift or modify ComfyUI internals.
 - Works with LoRA-patched MOSS models; uses the ComfyUI sampling, noise, masks and preview callbacks (including global **Preview Method: Auto**).
-
-# Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-ollama-bridge
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Restart ComfyUI and add **MOSS Smart Sampler** from `extensions/VicNodes/MOSS Smart Sampler`.
-
-Use a sufficiently recent ComfyUI build with native MOSS-Image support and the selected samplers available. No extra Python packages are installed by this node beyond ComfyUI's own dependencies.
 
 ## Quick start
 **Turbo (MOSS SFT + compatible 8-step Turbo LoRA):** choose `Turbo`, `steps=0`, `cfg=0`, `sampler_name=euler`, `scheduler=simple`, `sigma_strategy=Native Reference`, `denoise=1.0`, `add_noise=true`. This resolves to **8 steps** and **CFG 1.0**. Switch to Smooth Warp or Stage Weighted with Sigma Strength at `0.50`, `0.75` or `1.00` to explore variations using the **same seed**.

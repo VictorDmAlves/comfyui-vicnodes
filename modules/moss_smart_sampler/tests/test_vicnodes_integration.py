@@ -11,7 +11,7 @@ def test_registry_and_category(plugin):
 def test_module_version_and_widgets_preserved(plugin):
     package, _ = plugin
     node = package.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
-    assert package.__version__ == "1.0.0"
+    assert package.__version__ == "1.1.0"
     assert list(node.INPUT_TYPES()["required"]) == [
         "model", "positive", "negative", "latent_image", "seed", "preset", "steps",
         "cfg", "sampler_name", "scheduler", "sigma_strategy", "sigma_strength",
@@ -21,7 +21,10 @@ def test_module_version_and_widgets_preserved(plugin):
     assert node.RETURN_NAMES == ("LATENT",)
 
 
-def test_no_frontend_settings_or_local_config(plugin):
+def test_shared_frontend_and_no_local_settings(plugin):
     package, _ = plugin
     assert not hasattr(package, "WEB_DIRECTORY")
     assert not hasattr(package, "SETTINGS")
+    from pathlib import Path
+    root = Path(package.__file__).resolve().parents[2]
+    assert (root / "web" / "moss_smart_sampler" / "preset_sync.js").is_file()

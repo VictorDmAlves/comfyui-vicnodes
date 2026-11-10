@@ -30,16 +30,24 @@ def is_turbo(preset: str) -> bool:
     return preset in (ultrafast_engine.PRESET_NAME, "UltraFast / Turbo")
 
 
-def resolve_parameters(preset: str, steps: int, cfg: float):
-    turbo = is_turbo(preset)
-    if not turbo and preset not in standard_engine.PRESET_STEPS:
+def resolve_parameters(preset: str, steps: int, cfg: float,
+                       custom_base_preset: str = "Balanced"):
+    # "Custom" changes only the displayed preset, never the underlying sigma
+    # engine. A Turbo customization must continue to use the Turbo curve.
+    profile = custom_base_preset if preset == "Custom" else preset
+    turbo = is_turbo(profile)
+    if not turbo and profile not in standard_engine.PRESET_STEPS:
         raise ValueError(f"Unrecognized MOSS Smart Sampler preset: {preset}")
     if not isinstance(steps, int) or not 0 <= steps <= 150:
         raise ValueError("steps must be 0 (Auto) or between 1 and 150.")
     if not math.isfinite(cfg) or not 0 <= cfg <= 30:
         raise ValueError("cfg must be 0 (Auto) or between 0 and 30.")
-    resolved_steps = steps or (ultrafast_engine.DEFAULT_STEPS if turbo else standard_engine.PRESET_STEPS[preset])
-    resolved_cfg = cfg or (ultrafast_engine.DEFAULT_CFG if turbo else standard_engine.PRESET_CFG[preset])
+    if preset == "Custom" and steps == 0:
+        raise ValueError("Custom preset requires a positive number of steps.")
+    resolved_steps = steps or (ultrafast_engine.DEFAULT_STEPS if turbo else standard_engine.PRESET_STEPS[profile])
+    # Legacy named presets continue to interpret cfg=0 as automatic.
+    # Custom is explicit: even CFG 0 is an intentional user choice.
+    resolved_cfg = cfg if preset == "Custom" else (cfg or (ultrafast_engine.DEFAULT_CFG if turbo else standard_engine.PRESET_CFG[profile]))
     return turbo, resolved_steps, resolved_cfg
 
 
@@ -97,7 +105,8 @@ def build_schedule(reference: torch.Tensor, preset: str, strategy: str,
 def execute(model, positive, negative, latent, seed: int, preset: str, steps: int,
             cfg: float, sampler_name: str, scheduler: str, sigma_strategy: str,
             refinement_bias: float, denoise: float, add_noise: bool,
-            sigma_strength: float = 1.0):
+            sigma_strength: float = 1.0,
+            custom_base_preset: str = "Balanced"):
     model_sampling = validate_model(model)
     if sampler_name not in SAMPLER_CHOICES:
         raise ValueError("Available samplers are Euler, er_sde, and sa_solver.")
@@ -106,13 +115,15 @@ def execute(model, positive, negative, latent, seed: int, preset: str, steps: in
         raise ValueError(f"Sampler {sampler_name!r} is unavailable in this ComfyUI build.")
     if not 0 <= denoise <= 1:
         raise ValueError("denoise must be in the interval [0, 1].")
-    turbo, effective_steps, effective_cfg = resolve_parameters(preset, steps, cfg)
+    turbo, effective_steps, effective_cfg = resolve_parameters(
+        preset, steps, cfg, custom_base_preset)
+    sigma_profile = custom_base_preset if preset == "Custom" else preset
     if denoise == 0:
         LOGGER.info("[MOSS Smart Sampler] denoise=0: unchanged input latent returned.")
         return (latent.copy(),)
 
     reference = generate_reference_sigmas(model_sampling, scheduler, effective_steps, denoise)
-    sigmas = build_schedule(reference, preset, sigma_strategy, refinement_bias, sigma_strength)
+    sigmas = build_schedule(reference, sigma_profile, sigma_strategy, refinement_bias, sigma_strength)
     if turbo and effective_steps != 8:
         LOGGER.warning("[MOSS Smart Sampler] Turbo mode with %d steps (8 is the validated baseline).", effective_steps)
 
@@ -133,11 +144,11 @@ def execute(model, positive, negative, latent, seed: int, preset: str, steps: in
 
     max_abs_deviation = float((sigmas - reference).abs().max())
     LOGGER.info(
-        "[MOSS Smart Sampler v1.0.0] %s | preset=%s | steps=%d | cfg=%.2f | "
-        "sampler=%s | scheduler=%s | strategy=%s | sigma_strength=%.2f | bias=%.2f | "
+        "[MOSS Smart Sampler v1.1.0] %s | preset=%s | steps=%d | cfg=%.2f | "
+        "sigma_profile=%s | sampler=%s | scheduler=%s | strategy=%s | sigma_strength=%.2f | bias=%.2f | "
         "denoise=%.2f | add_noise=%s | seed=%d | sigma=[%.6f .. %.6f] | max_abs_delta=%.6f",
         model_info(model, model_sampling), preset, effective_steps, effective_cfg,
-        sampler_name, scheduler, sigma_strategy, sigma_strength, refinement_bias,
+        sigma_profile, sampler_name, scheduler, sigma_strategy, sigma_strength, refinement_bias,
         denoise, add_noise, seed, float(sigmas[0]), float(sigmas[-1]), max_abs_deviation,
     )
     t0 = time.perf_counter()

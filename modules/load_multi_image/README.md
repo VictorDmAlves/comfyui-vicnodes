@@ -25,23 +25,6 @@ Update
 - Saves image selections, number of slots, and current preview index with the Workflow.
 - No additional Python libraries to install beyond the ones already used by ComfyUI.
 
-## Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-load-multi-image.git
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Restart ComfyUI and add **Load Multi Image** from `extensions/VicNodes/Load Multi Image`.
-
 ## Quick start
 1. In slot 1, select an existing image using the filename picker, click **Upload / Replace**, or drop an image onto the node.
 2. Click **+ Add image slot** to create slot 2 and its two new ports.

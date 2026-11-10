@@ -32,34 +32,6 @@ Added
 
 This node depends on the Impact Pack Wildcard engine. It does not implement a separate Wildcard parser.
 
-## Installation
-
-### Git
-Open a terminal inside the ComfyUI `custom_nodes` directory and clone the repository:
-
-```bash
-cd ComfyUI/custom_nodes
-git clone https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor
-```
-
-### ZIP
-1. Download the repository as a ZIP file.
-2. Extract it into `ComfyUI/custom_nodes/`.
-3. Make sure the final structure is not nested twice.
-
-Correct:
-
-```text
-ComfyUI/
-└── custom_nodes/
-    └── comfyui-keyword-wildcard-processor/
-        ├── __init__.py
-        ├── keyword_wildcard_processor.py
-        └── web/
-```
-
-Restart ComfyUI and add **Keyword Wildcard Processor** from `extensions/VicNodes/Keyword Wildcard Processor`.
-
 ## Quick start
 Create a Wildcard file in the Impact Pack Wildcard directory:
 
