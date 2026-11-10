@@ -27,9 +27,8 @@ Standalone pages:
 [ComfyUI Hybrid Sampler](https://github.com/VictorDmAlves/comfyui-hybrid-sampler) | [ComfyUI Keyword Wildcard Processor](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor) | [ComfyUI Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) | [ComfyUI MOSS Smart Sampler](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler) | [ComfyUI Ollama Bridge](https://github.com/VictorDmAlves/comfyui_ollama_bridge) | [ComfyUI Persistent Save Image](https://github.com/VictorDmAlves/comfyui-persistent-save-image) | [ComfyUI Spatial LoRA](https://github.com/VictorDmAlves/comfyui-spatial-lora) | [ComfyUI Flux Klein Text Encode](https://github.com/VictorDmAlves/comfyui-flux-klein-text-encode) | [ComfyUI Visual Compare](https://github.com/VictorDmAlves/comfyu-visual-compare)
 
 ## Latest release
-### 1.3
-Added
-- Integration with the new `custom_node` ComfyUI Visual Compare.
+### 1.4
+- Update MOSS Smart Sampler with the same Standalone version.
 
 # Installation
 
