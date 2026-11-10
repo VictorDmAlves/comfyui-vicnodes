@@ -22,13 +22,14 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Spatial LoRA](./modules/spatial_lora).
 - [ComfyUI Flux Klein Text Encode](./modules/flux_klein_text_encode).
 - [ComfyUI Visual Compare](./modules/visual_compare).
+- [ComfyUI Krea2 Smart Sampler](./modules/krea2_smart_sampler).
 
 Standalone pages:
-[ComfyUI Hybrid Sampler](https://github.com/VictorDmAlves/comfyui-hybrid-sampler) | [ComfyUI Keyword Wildcard Processor](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor) | [ComfyUI Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) | [ComfyUI MOSS Smart Sampler](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler) | [ComfyUI Ollama Bridge](https://github.com/VictorDmAlves/comfyui_ollama_bridge) | [ComfyUI Persistent Save Image](https://github.com/VictorDmAlves/comfyui-persistent-save-image) | [ComfyUI Spatial LoRA](https://github.com/VictorDmAlves/comfyui-spatial-lora) | [ComfyUI Flux Klein Text Encode](https://github.com/VictorDmAlves/comfyui-flux-klein-text-encode) | [ComfyUI Visual Compare](https://github.com/VictorDmAlves/comfyu-visual-compare)
+[ComfyUI Hybrid Sampler](https://github.com/VictorDmAlves/comfyui-hybrid-sampler) | [ComfyUI Keyword Wildcard Processor](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor) | [ComfyUI Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) | [ComfyUI MOSS Smart Sampler](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler) | [ComfyUI Ollama Bridge](https://github.com/VictorDmAlves/comfyui_ollama_bridge) | [ComfyUI Persistent Save Image](https://github.com/VictorDmAlves/comfyui-persistent-save-image) | [ComfyUI Spatial LoRA](https://github.com/VictorDmAlves/comfyui-spatial-lora) | [ComfyUI Flux Klein Text Encode](https://github.com/VictorDmAlves/comfyui-flux-klein-text-encode) | [ComfyUI Visual Compare](https://github.com/VictorDmAlves/comfyu-visual-compare) | [ComfyUI Krea2 Smart Sampler](https://github.com/VictorDmAlves/comfyui-krea2-smart-sampler)
 
 ## Latest release
-### 1.4
-- Update MOSS Smart Sampler with the same Standalone version.
+### 1.5
+- Added ComfyUI Krea2 Smart Sampler node.
 
 # Installation
 
@@ -49,6 +50,10 @@ git clone https://github.com/VictorDmAlves/comfyui-vicnodes.git
 3. Make sure the final structure is not nested twice.
 
 Restart ComfyUI.
+
+You can find the nodes via the following path:
+- `Nodes>Comfy Nodes>VicNodes`
+- `Nodes>Extensions>VicNodes`
 
 ## License
 See [LICENSE](LICENSE).
