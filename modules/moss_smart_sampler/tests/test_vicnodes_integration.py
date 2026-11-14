@@ -11,12 +11,13 @@ def test_registry_and_category(plugin):
 def test_module_version_and_widgets_preserved(plugin):
     package, _ = plugin
     node = package.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
-    assert package.__version__ == "1.1.0"
+    assert package.__version__ == "1.2.0"
     assert list(node.INPUT_TYPES()["required"]) == [
         "model", "positive", "negative", "latent_image", "seed", "preset", "steps",
-        "cfg", "sampler_name", "scheduler", "sigma_strategy", "sigma_strength",
-        "refinement_bias", "denoise", "add_noise",
+        "cfg", "sampler_name", "scheduler", "denoise", "mode", "sigma_strength",
+        "refinement_bias", "add_noise",
     ]
+    assert list(node.INPUT_TYPES()["optional"])[:2] == ["sampler", "sigmas"]
     assert node.RETURN_TYPES == ("LATENT",)
     assert node.RETURN_NAMES == ("LATENT",)
 

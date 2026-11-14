@@ -8,7 +8,7 @@
 
 A compact **FLUX.2 Klein** text encoder with dynamically growing multi-image reference inputs; no more needing to attach `Reference Latent` for every single image.
 
-This, combined with my [Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) `custom_node`, you will have a more streamlined and clean Workflow for your image generation, using both Flux Klein 4B and 9B.
+This, combined with my [Load Multi Image](./modules/load_multi_image) `custom_node`, you will have a more streamlined and clean Workflow for your image generation, using both Flux Klein 4B and 9B.
 
 ## Latest release
 ### 1.0
@@ -51,7 +51,6 @@ The default is **4**, reflecting the officially supported reference-image count 
 Invalid/missing configuration falls back to 4.
 
 ## Workflow example
-
 ```text
 Flux.2 Klein CLIP ─────────────────┐
 FLUX.2 VAE ────────────────────────┤

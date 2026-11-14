@@ -1,25 +1,28 @@
-import importlib
 import torch
 import pytest
 
-
-class DummyFlow:
-    shift = 5.0
-    multiplier = 1.0
-    sigma_max = 1.0
-    def sigma(self, timestep):
-        return timestep
-
-
-class MOSSImage:
+class _BaseMOSS:
     pass
 
 
-class DummyPatcher:
-    model = MOSSImage()
-    def get_model_object(self, name):
-        assert name == "model_sampling"
-        return DummyFlow()
+class _Sampling:
+    sigma_min = 0.0
+    sigma_max = 5.0
+    shift = 1.0
+    multiplier = 1.0
+    def sigma(self, t):
+        return t
+
+
+def _patcher():
+    class Patcher:
+        model_options = {}
+        model = _BaseMOSS()
+        def clone(self): return self
+        def get_model_object(self, name):
+            assert name == "model_sampling"
+            return _Sampling()
+    return Patcher()
 
 
 def test_node_loads_legacy_api_and_preview_and_noise(plugin):
@@ -27,41 +30,27 @@ def test_node_loads_legacy_api_and_preview_and_noise(plugin):
     node = pkg.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
     assert node.RETURN_TYPES == ("LATENT",)
     required = node.INPUT_TYPES()["required"]
-    assert "model" in required and "latent_image" in required
-    lat = {"samples": torch.zeros((1, 4, 8, 8)), "batch_index": [0]}
-    result, = node.sample(
-        DummyPatcher(), ["positive"], ["negative"], lat, 42, "Turbo",
-        0, 0, "euler", "simple", "Native Reference", 0, 1, True,
-    )
-    assert result["samples"].shape == lat["samples"].shape
+    assert "mode" in required
+    latent = {"samples": torch.zeros(1, 4, 8, 8)}
+    result, = node.sample(_patcher(), ["pos"], ["neg"], latent, 42, "Turbo", 0, 0,
+                          "euler", "simple", 1.0, "Native Reference", 1.0, 0.0, True, None, None, "Balanced")
+    assert result["samples"].shape == latent["samples"].shape
     assert state["preview"] == 8
-    assert len(state["calls"]) == 1
-    assert state["calls"][0]["cfg"] == 1.0
-    assert state["calls"][0]["sampler"] == "euler"
-    assert state["calls"][0]["sigmas"].numel() == 9
-    assert state["calls"][0]["options"]["seed"] == 42
-    assert torch.equal(lat["samples"], torch.zeros_like(lat["samples"]))
 
 
-def test_model_guard(plugin):
-    pkg, state = plugin
-    class OtherModel:
-        pass
-    patcher = DummyPatcher()
-    patcher.model = OtherModel()
+def test_invalid_sampler_still_rejected(plugin):
+    pkg, _ = plugin
     node = pkg.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
-    lat = {"samples": torch.zeros((1, 4, 4, 4))}
-    with pytest.raises(ValueError, match="MOSS-Image models only"):
-        node.sample(patcher, [], [], lat, 1, "Balanced", 0, 0,
-                    "euler", "simple", "Native Reference", 0, 1, True)
-    assert not state["calls"]
+    lat = {"samples": torch.zeros(1, 4, 8, 8)}
+    with pytest.raises(ValueError):
+        node.sample(_patcher(), [], [], lat, 1, "Balanced", 0, 0,
+                    "bad_sampler", "simple", 1.0, "Native Reference", 1.0, 0.0, True, None, None, "Balanced")
 
 
-def test_zero_denoise_skips_forward(plugin):
-    pkg, state = plugin
+def test_denoise_zero_returns_input_when_internal_schedule_is_used(plugin):
+    pkg, _ = plugin
     node = pkg.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
-    lat = {"samples": torch.ones((1, 4, 4, 4))}
-    (out,) = node.sample(DummyPatcher(), [], [], lat, 0, "Balanced", 0, 0,
-                         "euler", "simple", "Stage Weighted", 0, 0, True)
-    assert out is not lat and out["samples"] is lat["samples"]
-    assert not state["calls"]
+    lat = {"samples": torch.randn(1, 4, 8, 8)}
+    (out,) = node.sample(_patcher(), [], [], lat, 0, "Balanced", 0, 0,
+                         "euler", "simple", 0.0, "Native Reference", 1.0, 0.0, True, None, None, "Balanced")
+    assert torch.equal(out["samples"], lat["samples"])

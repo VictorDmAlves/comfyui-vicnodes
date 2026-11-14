@@ -6,11 +6,11 @@
 ![VicNodes Screenshot](./images/main.png)
 </div>
 
-In simple terms, this `custom_node` is a collection of all the nodes I have created so far, with the help of ChatGPT Pro. Of course, it will still be possible to download each node individually via its dedicated page on my GitHub.
+In simple terms, this `custom_node` is a collection of all the nodes I have created so far, with the help of ChatGPT Pro.
 
 These nodes have been developed and tested across various scenarios, designed to be fast, dynamic, and easy to update and use. I even paid attention to how fast it loads when opening ComfyUI; I made a real point of optimizing it as much as possible.
 
-Nodes that include additional settings can be accessed via the menu `ComfyUI > Settings > OTHER > VicNodes`.
+Nodes that include additional settings can be accessed via the menu `ComfyUI > Settings > OTHER > VicNodes` (none til this present moment).
 
 This are the nodes created and compiled into this collection so far; to understand what each node does, consult the links below:
 - [ComfyUI Hybrid Sampler](./modules/hybrid_sampler).
@@ -23,13 +23,15 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Flux Klein Text Encode](./modules/flux_klein_text_encode).
 - [ComfyUI Visual Compare](./modules/visual_compare).
 - [ComfyUI Krea2 Smart Sampler](./modules/krea2_smart_sampler).
+- [ComfyUI Unified Model Loader](./modules/unified_model_loader).
+- [ComfyUI Experiment Studio](./modules/experiment_studio).
 
-Standalone pages:
-[ComfyUI Hybrid Sampler](https://github.com/VictorDmAlves/comfyui-hybrid-sampler) | [ComfyUI Keyword Wildcard Processor](https://github.com/VictorDmAlves/comfyui-keyword-wildcard-processor) | [ComfyUI Load Multi Image](https://github.com/VictorDmAlves/comfyui-load-multi-image) | [ComfyUI MOSS Smart Sampler](https://github.com/VictorDmAlves/comfyui-moss-smart-sampler) | [ComfyUI Ollama Bridge](https://github.com/VictorDmAlves/comfyui_ollama_bridge) | [ComfyUI Persistent Save Image](https://github.com/VictorDmAlves/comfyui-persistent-save-image) | [ComfyUI Spatial LoRA](https://github.com/VictorDmAlves/comfyui-spatial-lora) | [ComfyUI Flux Klein Text Encode](https://github.com/VictorDmAlves/comfyui-flux-klein-text-encode) | [ComfyUI Visual Compare](https://github.com/VictorDmAlves/comfyu-visual-compare) | [ComfyUI Krea2 Smart Sampler](https://github.com/VictorDmAlves/comfyui-krea2-smart-sampler)
+This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical to use.
 
 ## Latest release
-### 1.5
-- Added ComfyUI Krea2 Smart Sampler node.
+### 1.0.6
+- For maintenance purposes, I have consolidated the repositories into this single VicNodes repository.
+- Added the ComfyUI Unified Model Loader and ComfyUI Experiment Studio nodes.
 
 # Installation
 

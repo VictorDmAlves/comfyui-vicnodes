@@ -2,7 +2,7 @@ const fs = require('fs');
 const vm = require('vm');
 const assert = require('assert');
 const path = require('path');
-const source = fs.readFileSync(process.env.MOSS_PRESET_SYNC_JS || path.join(__dirname, '../../../web/moss_smart_sampler/preset_sync.js'), 'utf8');
+const source = fs.readFileSync(process.env.MOSS_PRESET_SYNC_JS || path.join(__dirname, '../web/moss_smart_sampler/preset_sync.js'), 'utf8');
 let extension;
 const app = { registerExtension(ext) { extension = ext; } };
 vm.runInNewContext(source.replace(/^import \{ app \} from .+;\s*/,'') , { app, Object, console });

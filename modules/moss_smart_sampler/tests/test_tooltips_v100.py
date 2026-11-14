@@ -1,11 +1,11 @@
-"""v1.0.0 release: every control has an accurate tooltip, no change to widget order."""
+"""v1.2.0 release: every control has an accurate tooltip."""
 
 import pytest
 
 FIELDS = [
     "model", "positive", "negative", "latent_image", "seed", "preset", "steps", "cfg",
-    "sampler_name", "scheduler", "sigma_strategy", "sigma_strength", "refinement_bias",
-    "denoise", "add_noise",
+    "sampler_name", "scheduler", "denoise", "mode", "sigma_strength", "refinement_bias",
+    "add_noise",
 ]
 
 
@@ -37,10 +37,12 @@ def test_widget_order_and_options_stable(plugin):
     pkg, _ = plugin
     node = pkg.NODE_CLASS_MAPPINGS["MOSSSmartSampler"]()
     required = node.INPUT_TYPES()["required"]
+    optional = node.INPUT_TYPES()["optional"]
     assert list(required) == FIELDS
     assert required["preset"][0] == ["Fast", "Balanced", "Realism", "Quality", "Turbo", "Custom"]
     assert required["sampler_name"][0] == ["euler", "er_sde", "sa_solver"]
     assert required["scheduler"][0] == ["simple", "sgm_uniform", "beta"]
-    assert required["sigma_strategy"][0] == ["Native Reference", "Stage Weighted", "Smooth Warp"]
+    assert required["mode"][0] == ["Native Reference", "Stage Weighted", "Smooth Warp"]
     assert required["sigma_strength"][1]["default"] == 1.0
-    assert pkg.__version__ == "1.1.0"
+    assert list(optional)[:2] == ["sampler", "sigmas"]
+    assert pkg.__version__ == "1.2.0"

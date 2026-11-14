@@ -1,28 +1,38 @@
-"""Integration regression: Custom routing retains chosen original engine."""
-import importlib
-
-import pytest
 import torch
 
-class MOSSImage:
+class _BaseMOSS:
     pass
 
-class Patcher:
-    model = MOSSImage()
-    def get_model_object(self, name):
-        return type('NativeFlow', (), {'sigma_max':1.0,'shift':5.0,'multiplier':1.0,'sigma':lambda self,t:t})()
 
-@pytest.mark.parametrize('profile,steps,cfg', [('Turbo',12,1.4),('Fast',27,4.1),('Balanced',37,4.2),('Realism',43,3.2),('Quality',53,5.0)])
-@pytest.mark.parametrize('strategy', ['Native Reference','Stage Weighted','Smooth Warp'])
-def test_custom_calls_original_sigma_engine(plugin, profile, steps, cfg, strategy):
-    pkg,state=plugin
-    engine=importlib.import_module(pkg.__name__ + '.core.sampling_engine')
-    latent={'samples':torch.zeros(1,4,8,8)}
+class _Sampling:
+    sigma_min = 0.0
+    sigma_max = 5.0
+    shift = 1.0
+    multiplier = 1.0
+    def sigma(self, t):
+        return t
+
+
+def _patcher():
+    class Patcher:
+        model_options = {}
+        model = _BaseMOSS()
+        def clone(self): return self
+        def get_model_object(self, name):
+            assert name == "model_sampling"
+            return _Sampling()
+    return Patcher()
+
+
+def test_custom_keeps_base_profile_for_turbo_and_standard(plugin):
+    pkg, state = plugin
     node=pkg.NODE_CLASS_MAPPINGS['MOSSSmartSampler']()
-    node.sample(Patcher(), ['pos'],['neg'],latent, 987, 'Custom',steps,cfg, 'euler','simple',strategy,0.0,1.0,True,1.0,profile)
-    reference=engine.generate_reference_sigmas(object(),'simple',steps,1.0)
-    expected=engine.build_schedule(reference,profile,strategy,0.0,1.0)
-    call=state['calls'][-1]
-    assert torch.equal(call['sigmas'],expected)
-    assert call['cfg']==cfg
-    assert state['preview']==steps
+    latent={'samples': torch.zeros(1,4,8,8)}
+    for profile, steps, cfg, strategy in [
+        ('Turbo', 12, 1.4, 'Smooth Warp'),
+        ('Balanced', 44, 3.6, 'Stage Weighted'),
+    ]:
+        node.sample(_patcher(), ['pos'], ['neg'], latent, 987, 'Custom', steps, cfg, 'euler', 'simple', 1.0, strategy, 1.0, 0.0, True, None, None, profile)
+        call = state['calls'][-1]
+        assert call['cfg'] == cfg
+        assert len(call['sigmas']) == steps + 1

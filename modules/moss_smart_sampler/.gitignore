@@ -1,6 +1,18 @@
+# Development-only assets
+docs/
+tests/
+**/tests/
+*.psd
+
+# IDE and development tools
+.vscode/
+.idea/
+.github/
+
+# Python cache
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.vscode/
-.idea/
+
+# Logs
 *.log

@@ -103,9 +103,9 @@ def build_schedule(reference: torch.Tensor, preset: str, strategy: str,
 
 
 def execute(model, positive, negative, latent, seed: int, preset: str, steps: int,
-            cfg: float, sampler_name: str, scheduler: str, sigma_strategy: str,
-            refinement_bias: float, denoise: float, add_noise: bool,
-            sigma_strength: float = 1.0,
+            cfg: float, sampler_name: str, scheduler: str, denoise: float,
+            mode: str, sigma_strength: float, refinement_bias: float,
+            add_noise: bool, sampler_input=None, sigmas_input=None,
             custom_base_preset: str = "Balanced"):
     model_sampling = validate_model(model)
     if sampler_name not in SAMPLER_CHOICES:
@@ -113,19 +113,36 @@ def execute(model, positive, negative, latent, seed: int, preset: str, steps: in
     available = getattr(comfy.samplers, "SAMPLER_NAMES", None)
     if available is not None and sampler_name not in available:
         raise ValueError(f"Sampler {sampler_name!r} is unavailable in this ComfyUI build.")
-    if not 0 <= denoise <= 1:
-        raise ValueError("denoise must be in the interval [0, 1].")
-    turbo, effective_steps, effective_cfg = resolve_parameters(
+
+    turbo, resolved_steps, effective_cfg = resolve_parameters(
         preset, steps, cfg, custom_base_preset)
     sigma_profile = custom_base_preset if preset == "Custom" else preset
-    if denoise == 0:
+
+    using_external_sigmas = sigmas_input is not None
+    using_external_sampler = sampler_input is not None
+
+    if not using_external_sigmas and not 0 <= denoise <= 1:
+        raise ValueError("denoise must be in the interval [0, 1].")
+    if not using_external_sigmas and denoise == 0:
         LOGGER.info("[MOSS Smart Sampler] denoise=0: unchanged input latent returned.")
         return (latent.copy(),)
 
-    reference = generate_reference_sigmas(model_sampling, scheduler, effective_steps, denoise)
-    sigmas = build_schedule(reference, sigma_profile, sigma_strategy, refinement_bias, sigma_strength)
-    if turbo and effective_steps != 8:
-        LOGGER.warning("[MOSS Smart Sampler] Turbo mode with %d steps (8 is the validated baseline).", effective_steps)
+    if using_external_sigmas:
+        if isinstance(sigmas_input, torch.Tensor):
+            sigmas = sigmas_input.detach().clone().to(dtype=torch.float32, device='cpu')
+        else:
+            sigmas = torch.as_tensor(sigmas_input, dtype=torch.float32).detach().clone().cpu()
+        effective_steps = int(sigmas.numel()) - 1
+        sigmas = sigma_utils.validate_sigmas(sigmas, effective_steps)
+        reference = None
+        if turbo and effective_steps != 8:
+            LOGGER.warning("[MOSS Smart Sampler] Turbo profile with external SIGMAS of %d steps (8 is the validated baseline).", effective_steps)
+    else:
+        reference = generate_reference_sigmas(model_sampling, scheduler, resolved_steps, denoise)
+        sigmas = build_schedule(reference, sigma_profile, mode, refinement_bias, sigma_strength)
+        effective_steps = resolved_steps
+        if turbo and effective_steps != 8:
+            LOGGER.warning("[MOSS Smart Sampler] Turbo mode with %d steps (8 is the validated baseline).", effective_steps)
 
     samples = latent["samples"]
     samples = comfy.sample.fix_empty_latent_channels(
@@ -140,16 +157,22 @@ def execute(model, positive, negative, latent, seed: int, preset: str, steps: in
     noise_mask = latent.get("noise_mask", None)
     callback = latent_preview.prepare_callback(model, effective_steps)
     disable_pbar = not comfy.utils.PROGRESS_BAR_ENABLED
-    sampler = comfy.samplers.sampler_object(sampler_name)
+    sampler = sampler_input if using_external_sampler else comfy.samplers.sampler_object(sampler_name)
 
-    max_abs_deviation = float((sigmas - reference).abs().max())
+    max_abs_deviation = None if reference is None else float((sigmas - reference).abs().max())
     LOGGER.info(
-        "[MOSS Smart Sampler v1.1.0] %s | preset=%s | steps=%d | cfg=%.2f | "
-        "sigma_profile=%s | sampler=%s | scheduler=%s | strategy=%s | sigma_strength=%.2f | bias=%.2f | "
-        "denoise=%.2f | add_noise=%s | seed=%d | sigma=[%.6f .. %.6f] | max_abs_delta=%.6f",
+        "[MOSS Smart Sampler v1.2.0] %s | preset=%s | steps=%d | cfg=%.2f | "
+        "sigma_profile=%s | sampler=%s%s | scheduler=%s | mode=%s | sigma_strength=%.2f | bias=%.2f | "
+        "denoise=%s | add_noise=%s | seed=%d | external_sigmas=%s | sigma=[%.6f .. %.6f] | max_abs_delta=%s",
         model_info(model, model_sampling), preset, effective_steps, effective_cfg,
-        sigma_profile, sampler_name, scheduler, sigma_strategy, sigma_strength, refinement_bias,
-        denoise, add_noise, seed, float(sigmas[0]), float(sigmas[-1]), max_abs_deviation,
+        sigma_profile,
+        sampler_name if not using_external_sampler else type(sampler_input).__name__,
+        " (external)" if using_external_sampler else "",
+        scheduler, mode, sigma_strength, refinement_bias,
+        "ignored" if using_external_sigmas else f"{denoise:.2f}",
+        add_noise, seed, using_external_sigmas,
+        float(sigmas[0]), float(sigmas[-1]),
+        "n/a" if max_abs_deviation is None else f"{max_abs_deviation:.6f}",
     )
     t0 = time.perf_counter()
     result_samples = comfy.sample.sample_custom(
