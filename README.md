@@ -25,13 +25,13 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Krea2 Smart Sampler](./modules/krea2_smart_sampler).
 - [ComfyUI Unified Model Loader](./modules/unified_model_loader).
 - [ComfyUI Experiment Studio](./modules/experiment_studio).
+- [ComfyUI Style String Injector](./modules/style_string_injector).
 
 This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical to use.
 
 ## Latest release
-### 1.0.6
-- For maintenance purposes, I have consolidated the repositories into this single VicNodes repository.
-- Added the ComfyUI Unified Model Loader and ComfyUI Experiment Studio nodes.
+### 1.0.7
+- Added the ComfyUI Style String Injector node.
 
 # Installation
 

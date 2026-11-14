@@ -1,0 +1,107 @@
+.vic-si-backdrop {
+  position: fixed; inset: 0; z-index: 100000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px; background: rgba(5, 9, 15, .82);
+  backdrop-filter: blur(5px); color: #f1f4fa;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.vic-si-dialog {
+  width: min(1080px, 100%); height: min(790px, 94vh);
+  min-height: 420px; display: flex; flex-direction: column;
+  border: 1px solid #34404e; border-radius: 14px;
+  background: #151a21; overflow: hidden;
+  box-shadow: 0 25px 100px rgba(0, 0, 0, .65);
+}
+.vic-si-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 21px 14px; border-bottom: 1px solid #29323e; }
+.vic-si-eyebrow { color: #8b9caf; font-size: 10px; font-weight: 750; letter-spacing: .17em; }
+.vic-si-headings h2 { font-size: 22px; font-weight: 720; margin: 5px 0 0; line-height: 1.1; color: #f1f4fa; }
+.vic-si-button { min-height: 35px; padding: 7px 13px; color: #e5eaf1; border: 1px solid #353f4b; border-radius: 7px; background: #202731; font: inherit; font-size: 12px; cursor: pointer; transition: background .13s, border-color .13s; }
+.vic-si-button:hover { background: #2c3745; border-color: #596c83; }
+.vic-si-button:focus-visible, .vic-si-search:focus-visible { outline: 2px solid #7fa8ec; outline-offset: 2px; }
+.vic-si-button:disabled { cursor: wait; opacity: .5; }
+.vic-si-close { min-width: 68px; }
+.vic-si-toolbar { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #29323e; }
+.vic-si-search { flex: 1; min-width: 0; border: 1px solid #3c4755; border-radius: 7px; background: #0e1319; color: #f0f5ff; font: inherit; font-size: 13px; padding: 9px 12px; }
+.vic-si-search::placeholder { color: #8d9ba9; }
+.vic-si-main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(245px, .83fr); }
+.vic-si-detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #29323e; }
+.vic-si-visual { min-height: 190px; flex: 0 1 56%; background: radial-gradient(ellipse at center, #222d3a 0%, #0a0f15 100%); position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+.vic-si-photo { display: none; width: 100%; height: 100%; object-fit: contain; }
+.vic-si-empty-photo { display: grid; position: absolute; inset: 0; place-items: center; font-size: 13px; color: #84909e; }
+.vic-si-copy { flex: 1 1 44%; min-height: 0; display: flex; flex-direction: column; padding: 17px 20px 18px; }
+.vic-si-detail-heading { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.vic-si-detail-heading h3 { font-size: 17px; font-weight: 690; color: #f2f6fc; margin: 0; }
+.vic-si-status { font-size: 9px; letter-spacing: .11em; font-weight: 800; color: #98b5df; }
+.vic-si-text-heading { color: #94a5b8; font-size: 10px; letter-spacing: .11em; font-weight: 700; margin-top: 14px; margin-bottom: 8px; }
+.vic-si-prompt { flex: 1; min-height: 75px; margin: 0; padding: 13px; border-radius: 8px; border: 1px solid #36414e; background: #0e1319; color: #dce6f0; white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; font-size: 12px; line-height: 1.55; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; user-select: text; }
+.vic-si-panel { min-height: 0; display: flex; flex-direction: column; }
+.vic-si-count { padding: 16px 15px 12px; color: #a5b2c0; border-bottom: 1px solid #252e3a; font-size: 11px; font-weight: 600; }
+.vic-si-list { min-height: 0; flex: 1; overflow-y: auto; padding: 8px; }
+.vic-si-entry { display: block; width: 100%; text-align: left; font-size: 12px; padding: 11px 13px; background: transparent; border-color: transparent; border-radius: 6px; overflow-wrap: anywhere; }
+.vic-si-entry:hover, .vic-si-entry.vic-si-hovered { color: #fff; background: #283543; border-color: #344758; }
+.vic-si-entry.vic-si-active { background: #24344a; border-color: #496b91; color: #d9eaff; }
+.vic-si-entry.vic-si-active.vic-si-hovered { background: #324b69; }
+.vic-si-empty-list { margin: 16px 12px; font-size: 12px; color: #a3afbd; }
+.vic-si-footer { display: flex; gap: 14px; justify-content: space-between; align-items: center; flex-wrap: wrap; min-height: 61px; padding: 11px 20px; border-top: 1px solid #29323e; }
+.vic-si-footer span { font-size: 11px; color: #a1adbc; }
+.vic-si-footer-buttons { display: flex; gap: 9px; }
+.vic-si-primary { color: #f5f9ff; background: #31547e; border-color: #567fa9; }
+.vic-si-primary:hover { background: #426c9d; border-color: #77a5d5; }
+.vic-si-readonly { color: #bbc6d3 !important; background: #121820 !important; cursor: default !important; }
+@media (max-width: 740px) {
+  .vic-si-backdrop { padding: 8px; }
+  .vic-si-dialog { height: 97vh; }
+  .vic-si-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(160px, .55fr); }
+  .vic-si-detail { border-right: none; border-bottom: 1px solid #29323e; }
+  .vic-si-visual { min-height: 120px; flex-basis: 48%; }
+  .vic-si-copy { padding: 12px; }
+  .vic-si-toolbar { padding: 9px; }
+  .vic-si-footer { padding: 8px 10px; }
+}
+
+/* VicNodes unified in-node button — Persistent Save Image visual standard.
+   The bar is a UI-only widget; it never affects style serialization. */
+.vic-si-node-action-bar {
+  box-sizing: border-box;
+  width: 100%;
+  height: 24px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  /* Empty area around the button should not steal node resize events. */
+  pointer-events: none;
+}
+.vic-si-node-action-button {
+  box-sizing: border-box;
+  pointer-events: auto;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid #313a45;
+  border-radius: 6px;
+  background: #171d23;
+  color: #d5dde5;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.vic-si-node-action-button:hover {
+  background: #242d37;
+  border-color: #526173;
+  color: #f1f5fa;
+}
+.vic-si-node-action-button:active { background: #1e2731; }
+.vic-si-node-action-button:focus-visible {
+  outline: 2px solid #81a4d4;
+  outline-offset: 1px;
+}
