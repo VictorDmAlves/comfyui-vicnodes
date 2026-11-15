@@ -10,9 +10,11 @@ In simple terms, this `custom_node` is a collection of all the nodes I have crea
 
 These nodes have been developed and tested across various scenarios, designed to be fast, dynamic, and easy to update and use. I even paid attention to how fast it loads when opening ComfyUI; I made a real point of optimizing it as much as possible.
 
-The goal of these nodes was to replace those created by authors who, often, do not update their projects in line with the release of new models; furthermore, since these are custom nodes, I was able to adapt them to my own Workflows, making them more optimized and useful.
+The goal of these nodes was to replace those created by authors who, often, do not update their projects in line with the release of new models; furthermore, since these are custom nodes, I was able to adapt them to my own Workflows, making them more useful and with new features that I like.
 
-Currently, this package is 60.9MB in size.
+Due to the limitations of my machine, I only consider updates for models that I am currently able to run. Of course, feel free to fork the project and make your own updates.
+
+Currently, this package is ~76MB in size and is loading with ~0.2 seconds.
 
 <!-- Nodes that include additional settings can be accessed via the menu `ComfyUI > Settings > OTHER > VicNodes` (none til this present moment). -->
 
@@ -31,12 +33,14 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Experiment Studio](./modules/experiment_studio).
 - [ComfyUI Style String Injector](./modules/style_string_injector).
 - [ComfyUI Latent Size Picker](./modules/latent_size_picker).
+- [ComfyUI VAE Encode Resize](./modules/vae_encode_resize).
+- [ComfyUI Smart Tile Upscaler](./modules/smart_tile_upscaler).
 
-This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical to use.
+This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical and and efficient.
 
 ## Latest release
-### 1.0.8
-- Added the ComfyUI Latent Size Picker node.
+### 1.0.9
+- Added the ComfyUI VAE Encode Resize and ComfyUI Smart Tile Upscaler nodes.
 
 # Installation
 
