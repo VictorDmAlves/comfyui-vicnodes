@@ -34,6 +34,13 @@ if MODULES_DIR.is_dir():
             )
 
             if not isinstance(classes, dict) or not classes:
+                frontend_nodes = getattr(module, "FRONTEND_ONLY_NODES", ())
+                if isinstance(frontend_nodes, (tuple, list)) and frontend_nodes:
+                    logger.info(
+                        "[VicNodes] Loaded %s (%d frontend nodes)",
+                        module_name, len(frontend_nodes)
+                    )
+                    continue
                 logger.warning(
                     "[VicNodes] No nodes found in %s", module_name
                 )
