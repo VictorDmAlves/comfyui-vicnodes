@@ -23,10 +23,14 @@ Set `latent_type` to `Auto` and connect the native `MODEL` output. Detection rea
 | FLUX.2 / FLUX.2 Klein / MOSS-Image / Ideogram 4 / Ernie Image / MageFlow | Flux2 | `EmptyFlux2LatentImage` | 128 channels, 16× |
 | Qwen Image 2.1 | QwenImage21 | `EmptyLatentImage` + native `comfy.sample.fix_empty_latent_channels` | 64 channels, 16× |
 | Hunyuan Image 2.1 (base) | HunyuanImage21 | `EmptyLatentImage` + native `comfy.sample.fix_empty_latent_channels` | 64 channels, 32× |
+| WAN 2.1 / WAN 2.2 14B (single image) | `EmptyLatentImage`, normalized in KSampler |
+| WAN 2.2 TI2V 5B (single image) | Specialized native 48-channel generator, frame count fixed to 1 |
 
 The two 64-channel paths deliberately invoke **ComfyUI's own** empty-latent conversion API; the plugin does not implement its own PyTorch latent allocator. Sizes for these models are rounded to 32-pixel multiples, and output `width`/`height` report the resulting values.
 
 **Model-specific note:** For Qwen Image 2.1 **image editing**, the reference-aware native `TextEncodeQwenImage21` latent is preferred because it matches the first reference image size and carries its reference-conditioning contract. The picker is suitable for standalone text-to-image sizing, not as a substitute for the edit encoder's reference latent.
+
+**This picker is for image generation only.** For actual WAN videos, including TXT2VID and IMG2VID sequences, use the native video-oriented nodes such as `Wan22ImageToVideoLatent` and their explicit frame-length controls. For IMG2IMG, preserve your appropriate VAE encoding / image-conditioning nodes; an empty latent alone does not encode a reference image.
 
 # Safety and limitations
 Video/temporal, audio, 3D, layered, pixel-space, refiner-specific and as-yet-unknown latent formats are not automatically mapped. They produce a clear error instead of incorrectly falling back to an image latent.
@@ -61,6 +65,7 @@ Standard size calculation rounds to multiples of 16. The 64-channel models align
 No external Python package dependencies or web assets are added. All latent generation and conversion are delegated to installed ComfyUI code. A sufficiently recent ComfyUI is required for FLUX.2, Qwen Image 2.1 and Hunyuan Image 2.1.
 
 # Sources
+- [cubiq / ComfyUI_essentials — Empty Latent Size Picker implementation](https://github.com/cubiq/ComfyUI_essentials/blob/main/misc.py)
 - [ComfyUI — Native Empty Latent Image (`nodes.py`)](https://github.com/Comfy-Org/ComfyUI/blob/master/nodes.py)
 - [ComfyUI — Native SD3 empty latent (`nodes_sd3.py`)](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy_extras/nodes_sd3.py)
 - [ComfyUI — Native FLUX.2 empty latent (`nodes_flux.py`)](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy_extras/nodes_flux.py)

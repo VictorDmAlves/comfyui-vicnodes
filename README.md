@@ -14,7 +14,7 @@ The goal of these nodes was to replace those created by authors who, often, do n
 
 Due to the limitations of my machine, I only consider updates for models that I am currently able to run. Of course, feel free to fork the project and make your own updates.
 
-Currently, this package is ~80MB in size and is loading with ~0.2 seconds.
+Currently, this package is ~80MB in size and is loading with ~0.2 seconds at my end.
 
 <!-- Nodes that include additional settings can be accessed via the menu `ComfyUI > Settings > OTHER > VicNodes` (none til this present moment). -->
 
@@ -41,8 +41,8 @@ This are the nodes created and compiled into this collection so far; to understa
 This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical and efficient.
 
 ## Latest release
-### 1.1.1
-- Added the ComfyUI Video Tools nodes.
+### 1.1.2
+- Update ComfyUI Latent Size Picker node to be compatible with Wan2.2 Models (for TXT2IMG and IMG2IMG only).
 
 # Installation
 

@@ -1,7 +1,8 @@
-"""Latent Size Picker - version 1.0.0.
+"""Latent Size Picker - version 1.0.0 (VicNodes).
 
-Uses the original ComfyUI empty-latent node implementations, not custom
-latent allocation. Auto mode fails closed for unknown/incompatible formats.
+Image-only size picker. WAN 14B uses the same ordinary 4D zero latent as
+comfyui_essentials; ComfyUI's KSampler normalizes it for the connected model.
+WAN 5B uses the native specialized empty latent generator with one time slice.
 """
 
 from __future__ import annotations
@@ -42,11 +43,11 @@ IMAGE_WAN_FORMAT_MODELS = {
     "anima", "qwen_image", "krea2", "joyimage",
 }
 
-# Auto mode is deliberately image-only. Video models need additional inputs
-# (frames/length), and cannot be replaced by a 4D image latent.
+# Other temporal formats are still deliberately unsupported. Wan 2.1 / 2.2
+# are handled separately after checking native latent metadata.
 VIDEO_MODEL_HINTS = (
-    "wan21", "wan22", "hunyuanvideo", "hunyuan_video", "mochi",
-    "ltxv", "cosmosvideo", "cogvideo", "video",
+    "hunyuanvideo", "hunyuan_video", "mochi", "ltxv",
+    "cosmosvideo", "cogvideo", "video",
 )
 
 NATIVE_NODES = {
@@ -57,6 +58,11 @@ NATIVE_NODES = {
     # fix_empty_latent_channels to convert to their exact 64-channel formats.
     "qwen21": ("nodes", "EmptyLatentImage"),
     "hunyuan21": ("nodes", "EmptyLatentImage"),
+    # WAN 2.1 / 2.2 14B: imitate Essentials exactly. KSampler's native
+    # fix_empty_latent_channels expands to 16ch, 5D, one temporal slice.
+    "wan21": ("nodes", "EmptyLatentImage"),
+    # WAN 2.2 TI2V 5B needs the native 48ch/16x format. One frame only.
+    "wan22": ("comfy_extras.nodes_wan", "Wan22ImageToVideoLatent"),
 }
 
 LATENT_OPTIONS = [
@@ -124,11 +130,24 @@ def _detect_native_profile(model):
     ):
         return "sd3"
 
+    # The Wan 2.2 14B models still use Wan21: 16 channels, x8 spatial,
+    # x4 temporal. Wan 2.2 TI2V 5B uses Wan22: 48 channels, x16 spatial,
+    # x4 temporal. Restrict this to actual Wan video models: other image
+    # models may reuse the Wan latent format (for example PAN2).
+    if (image_model in {"wan2.1", "wan2.2"}
+            and dims == 3 and fmt == "wan21"
+            and channels == 16 and spatial == 8):
+        return "wan21"
+    if (image_model in {"wan2.1", "wan2.2"}
+            and dims == 3 and fmt == "wan22"
+            and channels == 48 and spatial == 16):
+        return "wan22"
+
     if any(hint in identifier for hint in VIDEO_MODEL_HINTS) or (dims not in (None, 2)):
         raise ValueError(
-            "The connected MODEL uses a video/temporal latent. "
-            "Latent Size Picker v1.0 supports image latents only; "
-            "use the dedicated native video latent node."
+            "The connected MODEL uses a video/temporal latent that is not "
+            "supported by Latent Size Picker. Wan 2.1 / 2.2 T2V models "
+            "are supported; use a dedicated native latent node for other formats."
         )
 
     raise ValueError(
@@ -178,7 +197,8 @@ def _calculate_size(resolution, orientation, width_override,
     return w, h
 
 
-def _run_native_empty(profile: str, width: int, height: int, batch_size: int):
+def _run_native_empty(profile: str, width: int, height: int,
+                      batch_size: int):
     module_name, class_name = NATIVE_NODES[profile]
     try:
         node_class = getattr(importlib.import_module(module_name), class_name)
@@ -189,15 +209,25 @@ def _run_native_empty(profile: str, width: int, height: int, batch_size: int):
         ) from exc
 
     instance = node_class()
+    native_args = (width, height)
+    native_kwargs = {"batch_size": batch_size}
+    if profile == "wan22":
+        native_kwargs["length"] = 1  # image-only, hidden fixed frame count
+        # Native Wan22ImageToVideoLatent takes VAE as its first argument. It
+        # only accesses VAE when start_image is connected, so we can invoke
+        # the native empty-latent path with None and no extra picker input.
+        native_args = ()
+        native_kwargs.update(vae=None, width=width, height=height,
+                             start_image=None)
     if hasattr(instance, "execute"):
-        result = instance.execute(width, height, batch_size=batch_size)
+        result = instance.execute(*native_args, **native_kwargs)
     elif hasattr(instance, "generate"):
-        result = instance.generate(width, height, batch_size=batch_size)
+        result = instance.generate(*native_args, **native_kwargs)
     else:
         function = getattr(instance, "FUNCTION", None)
         if not function or not hasattr(instance, function):
             raise RuntimeError(f"Native ComfyUI node {class_name} has no callable generation method.")
-        result = getattr(instance, function)(width, height, batch_size=batch_size)
+        result = getattr(instance, function)(*native_args, **native_kwargs)
 
     # ComfyUI v3: io.NodeOutput(...). Older versions: (latent_dict,).
     if isinstance(result, dict) and "result" in result:
@@ -211,13 +241,41 @@ def _run_native_empty(profile: str, width: int, height: int, batch_size: int):
 
     # Validate to avoid silently returning a wrong format after upstream changes.
     expected_channels = {"standard": 4, "sd3": 16, "flux2": 128,
-                         "qwen21": 4, "hunyuan21": 4}[profile]
+                         "qwen21": 4, "hunyuan21": 4,
+                         "wan21": 4, "wan22": 48}[profile]
+    expected_dims = 5 if profile == "wan22" else 4
     actual_shape = getattr(result["samples"], "shape", None)
-    if actual_shape is None or len(actual_shape) != 4 or int(actual_shape[1]) != expected_channels:
+    if (actual_shape is None or len(actual_shape) != expected_dims
+            or int(actual_shape[1]) != expected_channels):
         raise RuntimeError(
             f"Native {class_name} returned an incompatible latent shape {actual_shape}; "
-            f"expected 4D with {expected_channels} channels."
+            f"expected {expected_dims}D with {expected_channels} channels."
         )
+    if profile == "wan22":
+        # Some ComfyUI builds of Wan22ImageToVideoLatent return a single empty
+        # item even when batch_size > 1. Reuse the native repeat helper to
+        # preserve the picker's existing batch-size contract.
+        if batch_size > 1 and actual_shape[0] == 1:
+            try:
+                native_utils = importlib.import_module("comfy.utils")
+                repeat = getattr(native_utils, "repeat_to_batch_size")
+            except (ImportError, AttributeError) as exc:
+                raise RuntimeError("ComfyUI's native repeat_to_batch_size is unavailable.") from exc
+            result = {**result, "samples": repeat(result["samples"], batch_size, dim=0)}
+            actual_shape = result["samples"].shape
+        expected_shape = (batch_size, 48, 1, height // 16, width // 16)
+        if tuple(actual_shape) != expected_shape:
+            raise RuntimeError(
+                f"Native {class_name} returned {actual_shape}; expected {expected_shape}."
+            )
+    if profile == "wan21":
+        # Identical to Essentials' Empty Latent Size Picker output. The core
+        # KSampler applies fix_empty_latent_channels using the actual MODEL.
+        expected_shape = (batch_size, 4, height // 8, width // 8)
+        if tuple(actual_shape) != expected_shape:
+            raise RuntimeError(
+                f"Native EmptyLatentImage returned {actual_shape}; expected {expected_shape}."
+            )
     return result
 
 
@@ -242,15 +300,12 @@ def _run_native_model_adjustment(model, latent, profile, width, height):
             "Update ComfyUI before using this model with Latent Size Picker."
         ) from exc
 
-    # EmptyLatentImage emits a 4-channel latent at scale 8. Native ComfyUI
-    # remaps its channels and spatial grid based on the connected MODEL.
+    # EmptyLatentImage emits 4ch at scale 8; Qwen/Hunyuan image need 64ch.
     samples = native_fix(model, latent["samples"], downscale_ratio_spacial=8)
     shape = getattr(samples, "shape", None)
     expected_downscale = {"qwen21": 16, "hunyuan21": 32}[profile]
-    expected_shape = (
-        int(latent["samples"].shape[0]), 64,
-        height // expected_downscale, width // expected_downscale,
-    )
+    expected_shape = (int(latent["samples"].shape[0]), 64,
+                      height // expected_downscale, width // expected_downscale)
     if shape is None or tuple(shape) != expected_shape:
         raise RuntimeError(
             f"ComfyUI returned {shape!r} for {profile}, "
@@ -289,16 +344,16 @@ class LatentSizePicker:
     FUNCTION = "generate"
     CATEGORY = "VicNodes/Latent Size Picker"
     DESCRIPTION = (
-        "Choose an image resolution and generate a native ComfyUI latent. "
-        "Auto detects supported model formats from the optional MODEL input. "
-        "Qwen Image 2.1 and Hunyuan Image 2.1 use native ComfyUI empty-latent "
-        "conversion. Unknown formats raise a descriptive error."
+        "Choose a resolution and generate an empty latent using native ComfyUI "
+        "nodes. WAN 2.1/2.2 T2V uses an image-only single-frame latent. "
+        "For video generation use the native WAN video nodes."
     )
 
     def generate(self, resolution=DEFAULT_PRESET, latent_type="Auto",
                  orientation="As selected", batch_size=1,
                  width_override=0, height_override=0,
-                 lock_aspect_ratio=True, megapixels_target=0.0, model=None):
+                 lock_aspect_ratio=True, megapixels_target=0.0, model=None,
+                 length=None):
         width, height = _calculate_size(
             resolution, orientation, width_override, height_override,
             lock_aspect_ratio, megapixels_target,
@@ -328,6 +383,16 @@ class LatentSizePicker:
         if profile in ("qwen21", "hunyuan21"):
             width = max(32, int(math.floor(width / 32.0 + 0.5)) * 32)
             height = max(32, int(math.floor(height / 32.0 + 0.5)) * 32)
+        if profile in ("wan21", "wan22"):
+            # Legacy workflows may still serialize a `length` field; ignored.
+            # Only single-frame image generation is available.
+            if width < 16 or height < 16:
+                raise ValueError("WAN image dimensions must be at least 16 pixels.")
+            if profile == "wan22":
+                # The native Wan22ImageToVideoLatent UI uses 32px steps.
+                # Follow that alignment for the 48-channel TI2V 5B format.
+                width = max(32, int(math.floor(width / 32.0 + 0.5)) * 32)
+                height = max(32, int(math.floor(height / 32.0 + 0.5)) * 32)
         latent = _run_native_empty(profile, width, height, int(batch_size))
         latent = _run_native_model_adjustment(model, latent, profile, width, height)
         LOG.debug("native=%s, profile=%s, dimensions=%sx%s, batch=%s",
