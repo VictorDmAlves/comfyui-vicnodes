@@ -1,31 +1,47 @@
 /**
- * ComfyUI-Krea2-Smart-Sampler v1.0.2 — VicNodes integration quality preset widget sync.
+ * Krea 2 Smart Sampler v1.0.4 — preset sync and workflow widget migrations.
  *
- * Presets affect ONLY the visible steps and cfg fields; there are no implicit
- * backend overrides or checkpoint switching. Loaded from the VicNodes web directory.
- *
- * Old workflow widget-array migrations preserve the user's actual settings.
+ * The frontend changes only visible Steps/CFG when a preset is selected.
+ * Old saved workflow arrays (v0.1.x through v1.0.3) are remapped by field,
+ * including control_after_generate when the host persists that widget.
  */
 import { app } from "../../../scripts/app.js";
 
-// Internal identifier intentionally retained so old workflows remain recognized.
-const NODE_TYPE = "VicKrea2SmartSampler";
-
+const NODE_TYPE = "VicKrea2SmartSampler"; // historical ID retained for workflows
 const PRESETS = Object.freeze({
     Turbo: [8, 1.0],
     Fast: [25, 4.5],
     Balanced: [32, 3.5],
     Quality: [52, 3.0],
 });
-const SAMPLING_MODES = new Set([
-    "Native Reference", "Stage Weighted", "Smooth Warp", "Refined Solver",
-]);
+const MODES = new Set(["Native Reference", "Stage Weighted", "Smooth Warp", "Refined Solver"]);
 const PRESET_NAMES = new Set([...Object.keys(PRESETS), "Custom"]);
-// Older workflows might contain the retired Realism preset.
-const LEGACY_PRESET_NAMES = new Set([...PRESET_NAMES, "Realism"]);
+const RETIRED_PRESET_NAMES = new Set([...PRESET_NAMES, "Realism"]);
+const CONTROL_CHOICES = new Set(["fixed", "increment", "decrement", "randomize"]);
+
+const NEW_ORDER = [
+    "seed", "preset", "steps", "cfg", "sampler_name", "scheduler",
+    "denoise", "mode", "sigma_strength", "prompt_adherence",
+    "adherence_strength", "text_scale", "add_noise",
+];
+const OLD_ORDER_103 = [
+    "seed", "steps", "cfg", "sampler_name", "scheduler", "denoise",
+    "preset", "mode", "sigma_strength", "prompt_adherence",
+    "adherence_strength", "text_scale", "add_noise",
+];
+const OLD_ORDER_100 = [
+    "seed", "steps", "cfg", "sampler_name", "scheduler", "denoise",
+    "model_variant", "preset", "mode", "sigma_strength", "prompt_adherence",
+    "adherence_strength", "text_scale", "add_noise",
+];
+const OLD_ORDER_01 = [
+    "seed", "steps", "cfg", "denoise", "mode", "sigma_strength",
+    "prompt_adherence", "adherence_strength", "text_scale", "add_noise",
+    "sampler_name", "scheduler",
+];
 
 function widget(node, name) {
-    return node.widgets?.find((item) => item.name === name);
+    return node.widgets?.find(w => w.name === name);
 }
 function markDirty(node) {
     node.setDirtyCanvas?.(true, true);
@@ -33,10 +49,8 @@ function markDirty(node) {
 }
 function applyPreset(node) {
     if (node.__kreaRestoring || node.__kreaPresetSync) return;
-    const preset = widget(node, "quality_preset")?.value;
-    const values = PRESETS[preset];
-    if (!values) return; // Custom: never silently modify visible steps/CFG.
-
+    const values = PRESETS[widget(node, "preset")?.value];
+    if (!values) return; // Custom must leave the existing settings unchanged.
     node.__kreaPresetSync = true;
     try {
         for (const [name, value] of [["steps", values[0]], ["cfg", values[1]]]) {
@@ -52,13 +66,12 @@ function applyPreset(node) {
 }
 function onManualEdit(node) {
     if (node.__kreaRestoring || node.__kreaPresetSync) return;
-    const selected = widget(node, "quality_preset");
+    const selected = widget(node, "preset");
     if (!selected || selected.value === "Custom") return;
     const expected = PRESETS[selected.value];
     if (!expected) return;
-    const steps = Number(widget(node, "steps")?.value);
-    const cfg = Number(widget(node, "cfg")?.value);
-    if (steps !== expected[0] || Math.abs(cfg - expected[1]) > 1e-6) {
+    if (Number(widget(node, "steps")?.value) !== expected[0]
+            || Math.abs(Number(widget(node, "cfg")?.value) - expected[1]) > 1e-6) {
         selected.value = "Custom";
         markDirty(node);
     }
@@ -75,102 +88,82 @@ function addCallback(node, name, handler) {
     };
 }
 function install(node) {
-    addCallback(node, "quality_preset", applyPreset);
+    addCallback(node, "preset", applyPreset);
     addCallback(node, "steps", onManualEdit);
     addCallback(node, "cfg", onManualEdit);
 }
-
-// Pre-v1.0.0 (v0.1.x) widget layout.
-const LEGACY_NAMES = [
-    "seed", "steps", "cfg", "denoise", "sampling_mode", "sigma_strength",
-    "prompt_adherence", "adherence_strength", "text_scale",
-    "add_noise", "sampler_name", "scheduler",
-];
-function isLegacy(data) {
-    const v = data?.widgets_values;
-    return Array.isArray(v) && v.length >= 9 && v.length <= LEGACY_NAMES.length
-        && typeof v[3] === "number" && SAMPLING_MODES.has(v[4]);
+function normalizePreset(settings) {
+    const expected = PRESETS[settings.preset];
+    if (settings.preset !== "Custom" && (!expected
+            || Number(settings.steps) !== expected[0]
+            || Math.abs(Number(settings.cfg) - expected[1]) > 1e-6)) {
+        settings.preset = "Custom";
+    }
 }
 
-// v1.0.0 had model_variant immediately BEFORE quality_preset.
-// The new widget layout removes exactly that single field.
-function isV100(data) {
-    const v = data?.widgets_values;
-    return Array.isArray(v) && v.length >= 13
-        && (v[6] === "Turbo" || v[6] === "RAW")
-        && LEGACY_PRESET_NAMES.has(v[7]) && SAMPLING_MODES.has(v[8]);
-}
-function migrateLegacy(node, saved) {
-    const values = Object.fromEntries(LEGACY_NAMES.map((name, index) => [name, saved[index]]));
-    for (const [name, value] of Object.entries(values)) {
-        if (value === undefined) continue;
-        const w = widget(node, name);
-        if (w) w.value = value;
+// Identify legacy layouts from data shape. Never guess on unknown layouts.
+function migrateWidgets(node, original) {
+    if (!Array.isArray(original) || original.length < 9) return original;
+    let values = [...original];
+    let afterSeedControl;
+    if (CONTROL_CHOICES.has(values[1])) {
+        afterSeedControl = values[1];
+        values.splice(1, 1);
     }
-    const preset = widget(node, "quality_preset");
-    if (preset) preset.value = "Custom";
-    markDirty(node);
-}
-// The old v1.0.0 model_variant existed only in that release.
-// Preserve the actual sampling parameters from every prior workflow.
-function migrateV100(saved) {
-    const newValues = [...saved];
-    const previousVariant = newValues.splice(6, 1)[0];
-    const oldPreset = newValues[6];
-    const actualSteps = Number(newValues[1]);
-    const actualCFG = Number(newValues[2]);
-
-    // Special case: Turbo/Balanced in v1.0.0 meant Turbo 8 / CFG 1.
-    if (previousVariant === "Turbo" && oldPreset === "Balanced"
-        && actualSteps === PRESETS.Turbo[0]
-        && Math.abs(actualCFG - PRESETS.Turbo[1]) <= 1e-6) {
-        newValues[6] = "Turbo";
+    let order;
+    if (typeof values[3] === "number" && MODES.has(values[4])) {
+        order = OLD_ORDER_01;
+    } else if ((values[6] === "Turbo" || values[6] === "RAW")
+               && RETIRED_PRESET_NAMES.has(values[7]) && MODES.has(values[8])) {
+        order = OLD_ORDER_100;
+    } else if (RETIRED_PRESET_NAMES.has(values[6]) && MODES.has(values[7])
+               && typeof values[1] === "number") {
+        order = OLD_ORDER_103;
+    } else if (PRESET_NAMES.has(values[1]) && MODES.has(values[7])) {
+        order = NEW_ORDER;
+    } else {
+        return original;
     }
-    return newValues;
-}
-function normalizeSavedPreset(saved) {
-    if (!Array.isArray(saved) || saved.length < 7) return saved;
-    const result = [...saved];
-    const name = result[6];
-    if (typeof name !== "string") return result;
-    if (name === "Custom") return result;
-    const values = PRESETS[name];
-    const steps = Number(result[1]);
-    const cfg = Number(result[2]);
-    // A changed/retired preset must never silently overwrite existing values.
-    if (!values || steps !== values[0] || Math.abs(cfg - values[1]) > 1e-6) {
-        result[6] = "Custom";
+    const settings = {};
+    for (let i = 0; i < order.length && i < values.length; i++) {
+        settings[order[i]] = values[i];
     }
-    return result;
+    // v0.1.x had no presets; use Custom and retain exact numeric settings.
+    if (order === OLD_ORDER_01) settings.preset = "Custom";
+    // v1.0.0 Turbo/Balanced represented distilled 8 steps, CFG 1.
+    if (order === OLD_ORDER_100 && settings.model_variant === "Turbo"
+            && settings.preset === "Balanced" && Number(settings.steps) === 8
+            && Number(settings.cfg) === 1.0) {
+        settings.preset = "Turbo";
+    }
+    normalizePreset(settings);
+    const mapped = NEW_ORDER.map(name => settings[name] ?? widget(node, name)?.value);
+    if (afterSeedControl !== undefined) mapped.splice(1, 0, afterSeedControl);
+    // Other than the stable schema order, value equality means no migration.
+    if (mapped.length === original.length && mapped.every((v, i) => v === original[i])) return original;
+    return mapped;
 }
 
 app.registerExtension({
-    name: "comfyui.vicnodes.krea2.smart_sampler.presets",
+    name: "comfyui.krea2.smart_sampler.presets_v104",
     beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== NODE_TYPE) return;
-
         const prevCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function (...args) {
             const result = prevCreated?.apply(this, args);
             install(this);
             return result;
         };
-
         const prevConfigure = nodeType.prototype.onConfigure;
         nodeType.prototype.onConfigure = function (data, ...args) {
-            const legacy = isLegacy(data) ? [...data.widgets_values] : null;
-            const oldV1 = !legacy && isV100(data);
-            const converted = oldV1 ? migrateV100(data.widgets_values) : data?.widgets_values;
-            const normalized = legacy ? converted : normalizeSavedPreset(converted);
-            const incoming = normalized && normalized !== data?.widgets_values
-                ? { ...data, widgets_values: normalized }
-                : data;
+            const migrated = migrateWidgets(this, data?.widgets_values);
+            const incoming = migrated !== data?.widgets_values
+                ? { ...data, widgets_values: migrated } : data;
             this.__kreaRestoring = true;
             try {
                 const result = prevConfigure?.call(this, incoming, ...args);
                 install(this);
-                if (legacy) migrateLegacy(this, legacy);
-                if (oldV1 || (!legacy && normalized?.[6] !== data?.widgets_values?.[6])) markDirty(this);
+                if (migrated !== data?.widgets_values) markDirty(this);
                 return result;
             } finally {
                 this.__kreaRestoring = false;

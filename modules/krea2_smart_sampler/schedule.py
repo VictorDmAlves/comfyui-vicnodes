@@ -30,7 +30,7 @@ def make_sigmas(model, steps: int, denoise: float, mode: str, strength: float,
     )
     # Sampling machinery will move the tensor to the correct device.
     sigmas = ksampler.sigmas.cpu()
-    if mode == "Refined Solver" or strength == 0.0 or steps == 1:
+    if mode in ("Native Reference", "Refined Solver") or strength == 0.0 or steps == 1:
         return sigmas
     return warp_sigmas(sigmas, mode, strength)
 

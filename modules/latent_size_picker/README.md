@@ -25,6 +25,8 @@ Set `latent_type` to `Auto` and connect the native `MODEL` output. Detection rea
 | Hunyuan Image 2.1 (base) | HunyuanImage21 | `EmptyLatentImage` + native `comfy.sample.fix_empty_latent_channels` | 64 channels, 32× |
 | WAN 2.1 / WAN 2.2 14B (single image) | `EmptyLatentImage`, normalized in KSampler |
 | WAN 2.2 TI2V 5B (single image) | Specialized native 48-channel generator, frame count fixed to 1 |
+| WAN 2.1 / WAN 2.2 14B (single image) | Wan21, temporal model | `EmptyLatentImage`; converted automatically by `KSampler` through `comfy.sample.fix_empty_latent_channels` | Picker output: 4D, 4 channels, 8×; sampler input is adapted to 5D, 16 channels, 1 temporal slice |
+| WAN 2.2 TI2V 5B (single image) | Wan22, temporal model | `Wan22ImageToVideoLatent` native empty-image branch, with `length=1` internally; native batch repetition when needed | 5D, 48 channels, 16× spatial compression, 1 temporal slice |
 
 The two 64-channel paths deliberately invoke **ComfyUI's own** empty-latent conversion API; the plugin does not implement its own PyTorch latent allocator. Sizes for these models are rounded to 32-pixel multiples, and output `width`/`height` report the resulting values.
 

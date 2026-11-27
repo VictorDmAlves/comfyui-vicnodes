@@ -41,8 +41,8 @@ This are the nodes created and compiled into this collection so far; to understa
 This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical and efficient.
 
 ## Latest release
-### 1.1.2
-- Update ComfyUI Latent Size Picker node to be compatible with Wan2.2 Models (for TXT2IMG and IMG2IMG only).
+### 1.1.3
+- Update ComfyUI Krea2 Smart Sampler and ComfyUI Experiment Studio nodes.
 
 # Installation
 

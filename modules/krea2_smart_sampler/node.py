@@ -1,8 +1,8 @@
-"""One-node standalone Krea 2 Smart Sampler for both RAW and Turbo.
+"""Krea 2 Smart Sampler: native/custom paths plus optional SAMPLER and SIGMAS.
 
-Native Reference delegates to ComfyUI's original KSampler entry point.
-The quality_preset is a UI hint; the frontend writes actual Steps/CFG and
-this backend always executes the displayed numbers without hidden overrides.
+Presets are a frontend aid: the backend always samples with the visible Steps/CFG.
+Native Reference retains the official ComfyUI KSampler path when no external
+SAMPLER or SIGMAS are connected.
 """
 
 from __future__ import annotations
@@ -26,37 +26,39 @@ class Krea2SmartSampler:
                 "positive": ("CONDITIONING",),
                 "negative": ("CONDITIONING",),
                 "latent_image": ("LATENT",),
-                # Base sampling: identical controls/semantics to ComfyUI KSampler.
+                # Control-after-generate is ComfyUI's native seed companion.
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff,
-                                 "control_after_generate": True}),
+                                "control_after_generate": True}),
+                "preset": (list(PRESET_NAMES), {
+                    "default": "Balanced",
+                    "tooltip": "Turbo uses 8 steps / CFG 1.0. Fast, Balanced and Quality target RAW. Selecting a preset fills Steps and CFG; editing either switches to Custom."}),
                 "steps": ("INT", {"default": 32, "min": 1, "max": 1000,
-                                  "tooltip": "Actual executed steps. A preset fills this value; editing it switches the preset to Custom."}),
+                                 "tooltip": "Sampling steps (ignored for schedule construction when external SIGMAS are connected). Manual edits select Custom."}),
                 "cfg": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 20.0, "step": 0.1,
-                                  "tooltip": "Actual executed CFG. Turbo reference: 1.0; RAW reference: 3.5."}),
+                                 "tooltip": "CFG guidance. Turbo reference: 1.0; RAW Balanced: 3.5. Manual edits select Custom."}),
                 "sampler_name": (comfy.samplers.KSampler.SAMPLERS, {
-                    "default": "euler", "tooltip": "Native ComfyUI sampler. Refined Solver requires Euler."}),
+                    "default": "euler", "tooltip": "Internal sampler, ignored when an external SAMPLER is connected. Refined Solver requires Euler only when no external sampler/sigmas are connected."}),
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS, {
-                    "default": "simple", "tooltip": "Native ComfyUI scheduler. Uses the MODEL's existing flow shift."}),
-                "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                # Single preset selector. Turbo = distilled checkpoint; other rows = RAW.
-                "quality_preset": (list(PRESET_NAMES), {
-                    "default": "Balanced", "tooltip": "Turbo: distilled Krea 2 Turbo (8 / CFG 1). Fast, Balanced, Quality: Krea 2 RAW. Selects visible Steps/CFG only; load the matching checkpoint upstream. Manual edits switch to Custom."}),
-                # All four already validated modes retain their algorithms.
-                "sampling_mode": (list(MODES), {
-                    "default": "Native Reference", "tooltip": "Native uses ComfyUI's KSampler directly; the other three modes are experimental."}),
+                    "default": "simple", "tooltip": "Internal sigma schedule. Ignored when external SIGMAS are connected."}),
+                "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01,
+                                     "tooltip": "Denoising strength when generating internal sigmas; ignored when external SIGMAS are connected."}),
+                "mode": (list(MODES), {
+                    "default": "Native Reference",
+                    "tooltip": "Native Reference, Stage Weighted, Smooth Warp, Refined Solver. With external SIGMAS, all mode modifications are bypassed; an external SAMPLER supersedes the Refined Solver integration."}),
                 "sigma_strength": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.05,
-                    "tooltip": "Warp strength (Stage/Smooth), or derivative correction (Refined). Ignored by Native Reference; 0=no correction."}),
-                # Independent text-fusion option, disabled unless requested.
+                    "tooltip": "Intensity of Stage/Smooth sigma warps or Refined Solver correction. Ignored by Native Reference and when external SIGMAS are provided."}),
                 "prompt_adherence": ("BOOLEAN", {"default": False,
-                    "tooltip": "Experimental prompt fidelity adjustment; OFF for exact native KSampler comparison."}),
+                    "tooltip": "Optional experimental Krea 2 text conditioning adjustment. OFF for exact Native KSampler comparisons."}),
                 "adherence_strength": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 2.0, "step": 0.05,
-                    "tooltip": "Strength of the optional Krea 2 text-fusion adjustment."}),
+                    "tooltip": "Strength of the optional text-fusion adjustment."}),
                 "text_scale": ("FLOAT", {"default": 1.0, "min": 0.25, "max": 4.0, "step": 0.05,
-                    "tooltip": "Scales the internal txtmlp output when prompt adherence is enabled; 1.00 is neutral."}),
+                    "tooltip": "Internal txtmlp output multiplier when Prompt Adherence is enabled. 1.00 = neutral."}),
+                "add_noise": ("BOOLEAN", {"default": True,
+                    "tooltip": "Whether to add initial noise. Disable for workflows that already provide a noisy latent."}),
             },
             "optional": {
-                "add_noise": ("BOOLEAN", {"default": True,
-                    "tooltip": "True for normal sampling; disable to sample existing noisy latents."}),
+                "sampler_opt": ("SAMPLER", {"tooltip": "Overrides sampler_name and any Refined Solver integration when connected."}),
+                "sigmas_opt": ("SIGMAS", {"tooltip": "Use these sigmas exactly as supplied. Bypasses internal steps/scheduler/denoise sigma construction and mode/sigma_strength modifications."}),
             },
         }
 
@@ -65,16 +67,15 @@ class Krea2SmartSampler:
     FUNCTION = "sample"
     CATEGORY = "VicNodes/Krea 2 Smart Sampler"
     DESCRIPTION = (
-        "Standalone Krea 2 Turbo/RAW sampler with independent quality presets, "
-        "native ComfyUI reference, three experimental sampling modes and optional prompt adherence."
+        "Krea 2 Turbo/RAW sampler with quality presets, four sampling modes, "
+        "optional external SAMPLER/SIGMAS, and prompt adherence."
     )
 
-    def sample(self, model, positive, negative, latent_image, seed, steps, cfg,
-               sampler_name="euler", scheduler="simple", denoise=1.0,
-               quality_preset="Balanced",
-               sampling_mode="Native Reference", sigma_strength=0.5,
-               prompt_adherence=False, adherence_strength=0.5,
-               text_scale=1.0, add_noise=True):
+    def sample(self, model, positive, negative, latent_image, seed, preset="Balanced",
+               steps=32, cfg=3.5, sampler_name="euler", scheduler="simple",
+               denoise=1.0, mode="Native Reference", sigma_strength=0.5,
+               prompt_adherence=False, adherence_strength=0.5, text_scale=1.0,
+               add_noise=True, sampler_opt=None, sigmas_opt=None):
         import comfy.sample
         import comfy.samplers
         import comfy.utils
@@ -82,42 +83,47 @@ class Krea2SmartSampler:
 
         if type(model.model).__name__ != "Krea2":
             raise TypeError("Krea 2 Smart Sampler supports ComfyUI's Krea2 model only.")
-        # This validates UI selections, but intentionally DOES NOT alter steps
-        # or CFG: the widget values the user sees are exactly what runs.
-        get_preset(quality_preset)
-        if sampler_name not in comfy.samplers.KSampler.SAMPLERS:
+        # The selected preset never changes actual Steps/CFG behind the scenes.
+        get_preset(preset)
+        if mode not in MODES:
+            raise ValueError(f"Unknown Krea 2 Smart Sampler mode: {mode}")
+        has_external_sampler = sampler_opt is not None
+        has_external_sigmas = sigmas_opt is not None
+
+        if not has_external_sampler and sampler_name not in comfy.samplers.KSampler.SAMPLERS:
             raise ValueError(f"Unknown ComfyUI sampler: {sampler_name}")
-        if scheduler not in comfy.samplers.KSampler.SCHEDULERS:
+        if not has_external_sigmas and scheduler not in comfy.samplers.KSampler.SCHEDULERS:
             raise ValueError(f"Unknown ComfyUI scheduler: {scheduler}")
-        if sampling_mode not in MODES:
-            raise ValueError(f"Unknown Krea 2 Smart Sampler mode: {sampling_mode}")
-        if sampling_mode == "Refined Solver" and sampler_name != "euler":
-            raise ValueError(
-                "Refined Solver is an Euler-family solver. Select sampler_name='euler', "
-                "or use another sampling_mode with your chosen sampler."
-            )
-        if not (0.0 <= float(sigma_strength) <= 1.0):
+        # Refined uses its own Euler-family integration. An external sampler takes
+        # precedence; external SIGMAS explicitly bypass all mode modifications.
+        if not has_external_sampler and not has_external_sigmas and mode == "Refined Solver" and sampler_name != "euler":
+            raise ValueError("Refined Solver is an Euler-family solver. Select sampler_name='euler', "
+                             "or use another mode with the chosen sampler.")
+        if not has_external_sigmas and not (0.0 <= float(sigma_strength) <= 1.0):
             raise ValueError("sigma_strength must be between 0 and 1")
 
         samples = latent_image["samples"]
-        # EmptyLatentImage commonly supplies 4D [B,C,H,W], whereas Krea 2's
-        # Qwen/Wan-family VAE can encode IMG2IMG input as 5D [B,C,T,H,W]
-        # (usually T=1 for an image). ComfyUI's KSampler accepts both and
-        # fix_empty_latent_channels() normalizes 4D latents when required.
-        # Do not squeeze, reshape or convert encoded 5D latents: preserving
-        # their original dimensionality is essential for IMG2IMG fidelity.
         if not torch.is_tensor(samples) or samples.ndim not in (4, 5):
             raise TypeError(
                 "Krea 2 Smart Sampler requires a 4D or 5D LATENT "
                 "([batch, channels, height, width] or "
                 "[batch, channels, frames, height, width])"
             )
-        # Avoid imposing extra spatial-size checks beyond those in the native
-        # ComfyUI sampler. VAEEncode and KSampler own size compatibility.
-        if denoise <= 0:
+        # External sigmas are authoritative; internal denoise must not truncate
+        # or disable them, even if the denoise widget is 0.
+        if not has_external_sigmas and denoise <= 0:
             return (latent_image.copy(),)
+        if has_external_sigmas:
+            if not torch.is_tensor(sigmas_opt) or sigmas_opt.ndim != 1 or sigmas_opt.numel() < 2:
+                raise TypeError("External SIGMAS must be a 1D torch.Tensor containing at least two values.")
+            # No warp, sorting, casting, truncation, or cloning of external SIGMAS.
+            sigmas = sigmas_opt
+        else:
+            sigmas = None
 
-        sampling_model = attach_adherence(model, bool(prompt_adherence), float(adherence_strength), float(text_scale))
+        sampling_model = attach_adherence(
+            model, bool(prompt_adherence), float(adherence_strength), float(text_scale)
+        )
         fixed = comfy.sample.fix_empty_latent_channels(
             sampling_model, samples,
             latent_image.get("downscale_ratio_spacial"),
@@ -129,7 +135,9 @@ class Krea2SmartSampler:
         noise_mask = latent_image.get("noise_mask")
         disable_pbar = not comfy.utils.PROGRESS_BAR_ENABLED
 
-        if sampling_mode == "Native Reference":
+        # This path is intentionally unchanged: exact KSampler behavior when
+        # using the native reference with no external overrides.
+        if mode == "Native Reference" and not has_external_sampler and not has_external_sigmas:
             callback = latent_preview.prepare_callback(sampling_model, int(steps))
             result = comfy.sample.sample(
                 sampling_model, noise, int(steps), float(cfg), sampler_name, scheduler,
@@ -139,12 +147,28 @@ class Krea2SmartSampler:
                 disable_pbar=disable_pbar, seed=int(seed),
             )
         else:
-            sigmas = make_sigmas(sampling_model, int(steps), float(denoise),
-                                 sampling_mode, float(sigma_strength),
-                                 sampler_name=sampler_name, scheduler=scheduler)
-            if sigmas.numel() < 2:
-                return (latent_image.copy(),)
-            if sampling_mode == "Refined Solver":
+            if sigmas is None:
+                # If an external sampler is connected, sampler_name must truly
+                # be ignored. Euler is a neutral schedule-construction fallback.
+                # Samplers requiring a special penultimate sigma should be paired
+                # with external SIGMAS for exact schedule control.
+                schedule_sampler_name = "euler" if has_external_sampler else sampler_name
+                schedule_mode = ("Native Reference" if has_external_sampler and mode == "Refined Solver"
+                                 else mode)
+                sigmas = make_sigmas(
+                    sampling_model, int(steps), float(denoise), schedule_mode,
+                    float(sigma_strength), sampler_name=schedule_sampler_name,
+                    scheduler=scheduler,
+                )
+                if sigmas.numel() < 2:
+                    return (latent_image.copy(),)
+
+            if has_external_sampler:
+                sampler = sampler_opt
+            elif has_external_sigmas:
+                # External sigmas bypass even the Refined Solver mode, by design.
+                sampler = comfy.samplers.sampler_object(sampler_name)
+            elif mode == "Refined Solver":
                 sampler = comfy.samplers.KSAMPLER(sample_refined, {"correction": float(sigma_strength)})
             else:
                 sampler = comfy.samplers.sampler_object(sampler_name)

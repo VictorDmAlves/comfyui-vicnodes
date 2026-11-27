@@ -20,7 +20,7 @@ Experiment Studio tests parameters in **your existing Workflow**; it does not re
 # XY Plot comparison
 For a conventional **XY Plot**, choose `sampler_name` as Axis 1 and `scheduler` as Axis 2, enter the alternatives and use **Cross all**. With two samplers and three schedulers, you get six tested combinations. You can also add more axes, nest values under specific models, and repeat each configuration with several seeds.
 
-**Export layout:** current PNG output is a **labeled result gallery**, not a strict X-columns/Y-rows matrix.
+**Export layout:** the standard PNG exporter remains a labeled result gallery, while **Export XY Plot** generates a compact comparison-first X/Y matrix with minimal spacing between images.
 
 # Notes
 - One working model pipeline at a time.

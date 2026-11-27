@@ -6,5 +6,5 @@ from .node import Krea2SmartSampler
 NODE_CLASS_MAPPINGS = {"VicKrea2SmartSampler": Krea2SmartSampler}
 NODE_DISPLAY_NAME_MAPPINGS = {"VicKrea2SmartSampler": "Krea 2 Smart Sampler"}
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "__version__"]

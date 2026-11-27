@@ -1,11 +1,12 @@
 import {app} from '../../../scripts/app.js';
-import {addPresetEffects} from './preset_dependencies.mjs?v=1.1.0';
+import {xyDimensions,resolveXYAxes,xyMatrix,xyCanvasLayout,extractPromptTexts,extractEffectiveParams,xySharedSettings,xyRunLegend} from './xy_plot.mjs?v=1.2.2';
+import {addPresetEffects} from './preset_dependencies.mjs?v=1.2.2';
 import {api} from '../../../scripts/api.js';
-import {getCandidates, getSeedTargets, buildPlan, planWithSeedStrategy, SEED_AXIS_KEY, MAX_AXES, makeRunPrompt, formatRun, getSelectedImage, prepareAxes, valuesForAxis, canDisableLora, parentValueKey} from './core.mjs?v=1.1.0';
-import {clampExportChars, getExportLayout, percent, duration, remainingMs, flattenCompletedImages, findFrameIndex, nextCompletedFrame, clearNodeOutputPreview} from './experiment_utils.mjs?v=1.1.0';
-import {modelChange, unloadBeforeModelSwitch} from './model_cache.mjs?v=1.1.0';
+import {getCandidates, getSeedTargets, buildPlan, planWithSeedStrategy, SEED_AXIS_KEY, MAX_AXES, makeRunPrompt, formatRun, getSelectedImage, prepareAxes, valuesForAxis, canDisableLora, parentValueKey} from './core.mjs?v=1.2.2';
+import {clampExportChars, getExportLayout, percent, duration, remainingMs, flattenCompletedImages, findFrameIndex, nextCompletedFrame, clearNodeOutputPreview} from './experiment_utils.mjs?v=1.2.2';
+import {modelChange, unloadBeforeModelSwitch} from './model_cache.mjs?v=1.2.2';
 // ComfyUI serves extension JavaScript as native ES modules; load CSS as a stylesheet.
-const styleHref = new URL('./studio.css?v=1.1.0', import.meta.url).href;
+const styleHref = new URL('./studio.css?v=1.2.2', import.meta.url).href;
 const existingStyle = document.querySelector('link[data-ves-style]');
 if (existingStyle) existingStyle.href = styleHref;
 else {
@@ -16,7 +17,7 @@ else {
 
 const PLUGIN = 'Vic.ExperimentStudio';
 // Versioned browser entry point: avoid mixing a newly deployed extension with cached older modules.
-const EXTENSION_VERSION = '1.1.0';
+const EXTENSION_VERSION = '1.2.2';
 const CAPTURE_TYPE = 'VicExperimentStudio';
 const PAGE_SIZE = 16;
 const sessions = new WeakMap();
@@ -48,12 +49,12 @@ function savedState(ctx) {
 }
 function persist(ctx) {
   try {
-    localStorage.setItem(storeKey(ctx), JSON.stringify({results:ctx.results, sessionPrefix:ctx.sessionPrefix, selectedImageIndices:ctx.selectedImageIndices}));
+    localStorage.setItem(storeKey(ctx), JSON.stringify({results:ctx.results, sessionPrefix:ctx.sessionPrefix, selectedImageIndices:ctx.selectedImageIndices, sourcePrompts:ctx.sourcePrompts}));
   } catch (_e) { /* keep in-memory results */ }
   ctx.node.properties.experimentSettings = {
     axes: ctx.axes, fixedSeed: ctx.fixedSeed, seedMode: ctx.seedMode, randomSamples:ctx.randomSamples, mode: ctx.mode,
     page: ctx.page, presetSync:ctx.presetSync, previewEnabled:ctx.previewEnabled, previewFrequency:ctx.previewFrequency,
-    exportChars:ctx.exportChars, modelCacheMode:ctx.modelCacheMode,
+    exportChars:ctx.exportChars, modelCacheMode:ctx.modelCacheMode, xyXAxis:ctx.xyXAxis, xyYAxis:ctx.xyYAxis,
   };
 }
 function candidateDefault(c) {
@@ -85,26 +86,6 @@ function downloadBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2500);
-}
-function exportJSON(ctx) {
-  const payload = {application:'ComfyUI Experiment Studio', version:EXTENSION_VERSION,
-    fixed_seed:ctx.fixedSeed, model_cache_mode:ctx.modelCacheMode, seed_mode:ctx.results[0]?.run?.seedMode || 'fixed',
-    random_samples:Math.max(1,...ctx.results.map(r=>r.run?.sample || 1)), combination_mode:ctx.mode, axes:ctx.axes,
-    results:ctx.results.map(r => ({run:r.run, status:r.status, prompt_id:r.promptId,
-      images:r.images || [], selected_image_index:ctx.selectedImageIndices[r.run.number] || 0, error:r.error || null}))};
-  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}), 'experiment-studio-results.json');
-}
-function exportCSV(ctx) {
-  const csvCell = v => {
-    let s = String(v ?? '');
-    if (/^[\s]*[=+@-]/.test(s)) s = `'${s}`;
-    return `"${s.replace(/"/g, '""')}"`;
-  };
-  const rows = [['run','status','seed','parameters','prompt_id','filenames','selected_image_index','error']];
-  for (const r of ctx.results) rows.push([r.run.number,r.status,r.run.seed,formatRun(r.run),r.promptId || '',
-    (r.images||[]).map(i => `${i.subfolder || ''}/${i.filename}`).join(' | '),ctx.selectedImageIndices[r.run.number] || 0,r.error || '']);
-  const csv = '\ufeff' + rows.map(row => row.map(csvCell).join(',')).join('\r\n');
-  downloadBlob(new Blob([csv], {type:'text/csv;charset=utf-8'}), 'experiment-studio-results.csv');
 }
 function fitImage(ctx, image) {
   const aspect = image.width / image.height, boxAspect = ctx.w / ctx.h;
@@ -164,6 +145,149 @@ async function exportGrid(ctx) {
   downloadBlob(blob,`experiment-studio-grid-${ctx.page+1}.png`);
 }
 
+/** Export a compact X/Y matrix of the completed runs. The original PNG
+ * report exporter remains unchanged; this view is optimized for comparison. */
+async function exportXYPlot(ctx) {
+  const completed=ctx.results.filter(r=>r.status==='done'&&r.images?.length);
+  if(!completed.length) throw new Error('No completed images to export.');
+  const dims=xyDimensions(completed);
+  if(!dims.length) throw new Error('The completed runs have no editable parameters to use as XY axes.');
+  const {x,y}=resolveXYAxes(dims,ctx.xyXAxis,ctx.xyYAxis);
+  const matrix=xyMatrix(completed,x,y);
+  const measureCanvas=document.createElement('canvas');
+  const measure=measureCanvas.getContext('2d');
+  if(!measure) throw new Error('Canvas 2D is unavailable.');
+  measure.font='12px Arial, sans-serif';
+  const prompts=ctx.sourcePrompts || extractPromptTexts(ctx.basePrompt||ctx.apiPrompt||{});
+  const sharedSettings=xySharedSettings(matrix.entries,x,y);
+  const runLegends=xyRunLegend(matrix,x,y,ctx.selectedImageIndices);
+
+  // Fit the tile to the original image ratio when possible: matching source
+  // resolutions then touch edge-to-edge without artificial empty side bands.
+  const loaded=new Map();
+  async function cachedImage(meta) {
+    const url=imageURL(meta);
+    if(!loaded.has(url)) loaded.set(url,loadImage(url));
+    return loaded.get(url);
+  }
+  const first=matrix.entries[0];
+  const sampleIndex=Math.min(first.images.length-1,Math.max(0,Number(ctx.selectedImageIndices[first.run.number]||0)));
+  const sample=await cachedImage(first.images[sampleIndex]);
+  const tileWidth=290;
+  const imageHeight=Math.round(Math.max(230,Math.min(580,tileWidth*sample.height/sample.width)));
+  const layout=xyCanvasLayout(matrix,{prompts,sharedSettings,runLegends,tileWidth,imageHeight,
+    measure:text=>measure.measureText(text).width});
+  const canvas=document.createElement('canvas');
+  canvas.width=layout.width;canvas.height=layout.height;
+  const g=canvas.getContext('2d');
+  if(!g) throw new Error('Canvas 2D is unavailable.');
+  const {width,height,margin,gap,lineHeight,legendLineHeight,leftWidth,hasY,tileWidth:cellWidth,imageHeight:cellHeight,
+    headerTop,horizontal,settingsX,settingsTop,posLines,negLines,sharedLines,promptBlockHeight,
+    separatorY,gridTop,rowHeights,gridBottom,legendColumns,legendGap,legendWidth,legendRows,legendTop}=layout;
+
+  g.fillStyle='#ffffff';g.fillRect(0,0,width,height);
+  g.textBaseline='alphabetic';
+  g.fillStyle='#121927';g.font=width<550?'bold 16px Arial, sans-serif':'bold 25px Arial, sans-serif';
+  g.fillText('EXPERIMENT STUDIO  /  XY PLOT',margin,38);
+  g.fillStyle='#64748b';g.font=width<550?'11px Arial, sans-serif':'13px Arial, sans-serif';
+  g.fillText(width<550?`${matrix.entries.length} runs  ·  ${matrix.columns.length} X × ${matrix.rows.length} Y`:`${matrix.entries.length} completed runs  ·  ${matrix.columns.length} X values  ·  ${matrix.rows.length} Y values`,margin,58);
+
+  // Prompts and common settings are genuinely side by side on wide plots.
+  // On one-column exports they stack to avoid overlapping text.
+  g.fillStyle='#334155';g.font='bold 12px Arial, sans-serif';
+  g.fillText('POSITIVE PROMPT',margin,headerTop);
+  g.fillStyle='#1e293b';g.font='12px Arial, sans-serif';
+  posLines.forEach((line,i)=>g.fillText(line,margin,headerTop+19+i*lineHeight));
+  if(negLines.length){
+    const negativeY=headerTop+19+posLines.length*lineHeight+5;
+    g.fillStyle='#334155';g.font='bold 12px Arial, sans-serif';g.fillText('NEGATIVE PROMPT',margin,negativeY);
+    g.fillStyle='#1e293b';g.font='12px Arial, sans-serif';
+    negLines.forEach((line,i)=>g.fillText(line,margin,negativeY+19+i*lineHeight));
+  }
+  g.fillStyle='#334155';g.font='bold 12px Arial, sans-serif';
+  g.fillText('SHARED SETTINGS',settingsX,settingsTop);
+  g.fillStyle='#1e293b';g.font='12px Arial, sans-serif';
+  sharedLines.forEach((line,i)=>g.fillText(line,settingsX,settingsTop+19+i*lineHeight));
+
+  g.strokeStyle='#d7dfe8';g.lineWidth=1;
+  g.beginPath();g.moveTo(margin,separatorY);g.lineTo(width-margin,separatorY);g.stroke();
+
+  let rowTop=gridTop;
+  for(let r=0;r<matrix.rows.length;r++) {
+    if(hasY) {
+      // Rows retain compact Y labels for multi-row XY comparisons. No X value
+      // headings are drawn: all variable filenames are in the run legend.
+      const yValue=String(matrix.rows[r]);
+      const yLines=wrapXYLabel(g,yValue,leftWidth-10);
+      g.fillStyle='#334155';g.font='bold 12px Arial, sans-serif';
+      const labelY=rowTop+(cellHeight-yLines.length*16)/2+12;
+      yLines.forEach((line,i)=>g.fillText(line,margin+3,labelY+i*16));
+    }
+    for(let c=0;c<matrix.columns.length;c++) {
+      const cellX=margin+leftWidth+c*(cellWidth+gap);
+      const items=matrix.cells[r][c];
+      g.fillStyle='#edf2f7';g.fillRect(cellX,rowTop,cellWidth,cellHeight);
+      if(!items.length) {
+        g.fillStyle='#64748b';g.font='12px Arial, sans-serif';
+        const label='Not tested';
+        g.fillText(label,cellX+(cellWidth-g.measureText(label).width)/2,rowTop+cellHeight/2);
+        continue;
+      }
+      const innerGap=2;
+      const count=items.length;
+      const slotHeight=(cellHeight-innerGap*(count-1))/count;
+      for(let j=0;j<count;j++) {
+        const entry=items[j];
+        const selected=Math.min(entry.images.length-1,Math.max(0,Number(ctx.selectedImageIndices[entry.run.number]||0)));
+        const image=await cachedImage(entry.images[selected]);
+        const slotTop=rowTop+j*(slotHeight+innerGap);
+        const box={x:cellX,y:slotTop,w:cellWidth,h:slotHeight};
+        const fitted=fitImage(box,image);
+        g.drawImage(image,fitted.x,fitted.y,fitted.w,fitted.h);
+        // Only the small R### identifier is printed on the image itself.
+        const badge=`R${String(entry.run.number).padStart(3,'0')}`;
+        g.font='bold 12px Arial, sans-serif';
+        const badgeWidth=Math.max(42,g.measureText(badge).width+14);
+        g.fillStyle='rgba(15,23,42,0.82)';g.fillRect(cellX+5,slotTop+5,badgeWidth,21);
+        g.fillStyle='#fff';g.fillText(badge,cellX+12,slotTop+20);
+      }
+    }
+    rowTop+=rowHeights[r]+gap;
+  }
+
+  if(legendRows.length) {
+    g.fillStyle='#334155';g.font='bold 12px Arial, sans-serif';
+    g.fillText('RUN LEGEND',margin,legendTop);
+    let legendY=legendTop+22;
+    for(const row of legendRows) {
+      for(let c=0;c<row.items.length;c++) {
+        const xx=margin+c*(legendWidth+legendGap);
+        g.fillStyle='#334155';g.font='12px Arial, sans-serif';
+        row.items[c].lines.forEach((line,i)=>g.fillText(line,xx,legendY+i*legendLineHeight));
+      }
+      legendY+=row.height;
+    }
+  }
+
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('XY Plot PNG export failed.')),'image/png'));
+  downloadBlob(blob,'experiment-studio-xy-plot.png');
+}
+
+// Small, safely width-measured Y-axis label; row values are only shown when
+// there is a real Y axis, never for the 'Single row' case.
+function wrapXYLabel(g, value, width) {
+  const words=[];
+  const text=String(value||'');
+  let line='';
+  for(const ch of text) {
+    if(g.measureText(line+ch).width>width && line) {words.push(line);line=ch;}
+    else line+=ch;
+  }
+  if(line) words.push(line);
+  if(words.length>7) {words.length=7;words[6]=words[6].slice(0,-1)+'…';}
+  return words;
+}
+
 function element(tag, props={}) { const e=document.createElement(tag); Object.assign(e,props); return e; }
 function notice(ctx, message, type='info') { ctx.notice={message,type}; render(ctx); }
 
@@ -176,6 +300,7 @@ function makeSession(node) {
     randomSamples:String(config.randomSamples ?? '1'), mode:config.mode || 'cross',
     presetSync:config.presetSync !== false, presetInspection:null, previewEnabled:config.previewEnabled !== false, previewFrequency:config.previewFrequency==='reduced'?'reduced':'normal',
     exportChars:clampExportChars(config.exportChars ?? 40), modelCacheMode:config.modelCacheMode==='unload'?'unload':'auto',
+    xyXAxis:config.xyXAxis||'',xyYAxis:config.xyYAxis||'',sourcePrompts:null,
     results:[], selectedImageIndices:{}, page:0, status:'idle', notice:null, count:0, total:0,
     currentRun:0, lastError:'', stopRequested:false, pauseRequested:false,
     enumValues:new Map(), modalTab:'setup', sessionPrefix:'',
@@ -188,7 +313,7 @@ function makeSession(node) {
     confirmResetAxes:false, advancedOpen:false};
   const stored=savedState(ctx);
   ctx.results=stored.results || []; ctx.sessionPrefix=stored.sessionPrefix || '';
-  ctx.selectedImageIndices=stored.selectedImageIndices || {};
+  ctx.selectedImageIndices=stored.selectedImageIndices || {}; ctx.sourcePrompts=stored.sourcePrompts || null;
   return ctx;
 }
 
@@ -467,6 +592,16 @@ function detachLiveEvents(ctx) {
   ctx.activePromptId=null;ctx.liveReceiving=false;ctx.liveConfirmed=false;
 }
 
+function renderXYControls(ctx,completed) {
+  const dims=xyDimensions(completed);
+  if(!dims.length) return `<div class="ves-xy-controls"><small>No varying parameters found. The XY Plot can be exported when parameter axes are present.</small></div>`;
+  const {x,y}=resolveXYAxes(dims,ctx.xyXAxis,ctx.xyYAxis);
+  const choices=key=>dims.map(d=>`<option value="${esc(d.key)}" ${key===d.key?'selected':''}>${esc(d.inputName)}${dims.filter(k=>k.inputName===d.inputName).length>1?' (#'+esc(d.nodeId)+')':''} · ${d.values.length} values</option>`).join('');
+  return `<div class="ves-xy-controls"><div><strong>XY Plot axes</strong><small>Uses all completed runs · One selected image per run · Empty combinations stay blank</small></div>
+    <label>X axis <select class="ves-select" data-xy-axis="x">${choices(x)}</select></label>
+    <label>Y axis <select class="ves-select" data-xy-axis="y"><option value="__none__" ${!y?'selected':''}>None (single row)</option>${dims.filter(d=>d.key!==x).map(d=>`<option value="${esc(d.key)}" ${d.key===y?'selected':''}>${esc(d.inputName)}${dims.filter(k=>k.inputName===d.inputName).length>1?' (#'+esc(d.nodeId)+')':''} · ${d.values.length} values</option>`).join('')}</select></label></div>`;
+}
+
 function renderGallery(ctx) {
   const completed=ctx.results.filter(r=>r.status==='done' && r.images?.length);
   const other=ctx.results.filter(r=>r.status!=='done');
@@ -488,8 +623,8 @@ function renderGallery(ctx) {
   }).join('');
   return `<section class="ves-gallery-head"><div><h3>Results</h3><span>${completed.length} completed · ${ctx.results.length} recorded</span></div>
     <div class="ves-actions"><label class="ves-export-label" title="Maximum characters on each PNG caption line">PNG chars / line <select class="ves-select" data-config="exportChars"><option value="28" ${ctx.exportChars===28?'selected':''}>28</option><option value="36" ${ctx.exportChars===36?'selected':''}>36</option><option value="40" ${ctx.exportChars===40?'selected':''}>40</option><option value="48" ${ctx.exportChars===48?'selected':''}>48</option><option value="56" ${ctx.exportChars===56?'selected':''}>56</option></select></label><button type="button" class="ves-btn" data-action="export-grid" ${shown.some(x=>x.status==='done')?'':'disabled'}>Export selected PNG</button>
-    <button type="button" class="ves-btn" data-action="export-json" ${ctx.results.length?'':'disabled'}>JSON</button>
-    <button type="button" class="ves-btn" data-action="export-csv" ${ctx.results.length?'':'disabled'}>CSV</button></div></section>
+    <button type="button" class="ves-btn ves-export-xy" data-action="export-xy" ${completed.length?'':'disabled'}>Export XY Plot</button></div></section>
+    ${completed.length?renderXYControls(ctx,completed):''}
     ${ctx.total||all.length?renderMonitor(ctx):''}
     ${all.length?`<div class="ves-gallery">${content}</div><nav class="ves-pages"><button class="ves-btn small" data-action="prev-page" ${ctx.page===0?'disabled':''}>‹ Previous</button><span>Page ${ctx.page+1} / ${pages}</span><button class="ves-btn small" data-action="next-page" ${ctx.page>=pages-1?'disabled':''}>Next ›</button></nav>`:
     '<div class="ves-empty"><strong>No results yet</strong><p>Configure an experiment and start generating. Results will appear here automatically.</p></div>'}`;
@@ -547,7 +682,7 @@ function renderSetup(ctx) {
     <div class="ves-stat"><span>Seed targets</span><strong>${ctx.seedTargets?.length ?? 0}</strong></div>
     <div class="ves-stat"><span>Selected axes</span><strong>${ctx.axes.length}</strong></div>
     ${error?`<p class="ves-validation">${esc(error)}</p>`:`<div class="ves-plan">${preview}</div>${count>5?`<small>…and ${count-5} more combinations</small>`:''}`}
-    ${ctx.presetInspection?`<div class="ves-inspect-results"><strong>Preset effects</strong>${ctx.presetInspection.reports.map(r=>`<div class="ves-inspect-row">${esc(r.setting.inputName)}=${esc(r.setting.value)} ${r.changes.length?`→ ${esc(r.changes.map(c=>c.inputName+'='+c.value).join(' · '))}`:r.warning?`· ${esc(r.warning)}`:'· no dependent widget changes'}</div>`).join('')}</div>`:''}
+    ${ctx.presetInspection?`<div class="ves-inspect-results"><strong>Preset effects</strong>${ctx.presetInspection.reports.some(r=>r.changes.length||r.warning)?ctx.presetInspection.reports.filter(r=>r.changes.length||r.warning).map(r=>`<div class="ves-inspect-row">${esc(r.setting.inputName)}=${esc(r.setting.value)} ${r.changes.length?`→ ${esc(r.changes.map(c=>c.inputName+'='+c.value).join(' · '))}`:`· ${esc(r.warning)}`}</div>`).join(''):'<div class="ves-inspect-row ves-preset-empty">No preset effects available.</div>'}</div>`:''}
     <div class="ves-cta"><button type="button" class="ves-btn primary" data-action="run" ${error||locked?'disabled':''}>▶ Start experiment</button>
     <button type="button" class="ves-btn" data-action="inspect-presets" ${error||locked||!ctx.presetSync?'disabled':''}>Inspect preset effects</button>
     <button type="button" class="ves-btn" data-action="refresh" ${locked?'disabled':''}>↻ Refresh workflow</button></div>
@@ -716,6 +851,7 @@ async function unloadForNewModel(ctx, previousRun, run) {
 
 async function submitRun(ctx,run,index) {
   const prompt=makeRunPrompt(ctx.basePrompt,run,ctx.seedTargets,ctx.captureId,ctx.sessionPrefix);
+  run.effectiveSettings=extractEffectiveParams(prompt);
   // Use our own prompt_id from the beginning; fast Turbo models may emit their
   // first preview before the /prompt HTTP response reaches the browser.
   const desiredPromptId=newPromptId();ctx.activePromptId=desiredPromptId;
@@ -786,7 +922,7 @@ async function inspectBeforeRun(ctx) {
     const unsupported=result.reports.filter(r=>r.warning);
     ctx.notice={message:unsupported.length
       ? `${unsupported.length} preset choice(s) could not be inspected. Check the details below; manual axes may be needed.`
-      : 'Preset effects inspected. Confirm the derived steps/CFG shown below before starting.',
+      : result.reports.some(r=>r.changes.length) ? 'Preset effects inspected. Confirm the derived values shown below before starting.' : 'No preset effects available.',
       type:unsupported.length?'warning':'info'};
   } catch(e) {ctx.notice={message:e.message,type:'error'};}
   finally {ctx.preparing=false;render(ctx);}
@@ -806,6 +942,7 @@ async function begin(ctx) {
     const stamp=`${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}_${String(today.getHours()).padStart(2,'0')}${String(today.getMinutes()).padStart(2,'0')}${String(today.getSeconds()).padStart(2,'0')}`;
     ctx.sessionPrefix=`ExperimentStudio/ES_${stamp}_${safeName(ctx.node.properties.studioId).slice(0,8)}`;
     ctx.basePrompt=jsonClone(ctx.apiPrompt);ctx.baseWorkflow=jsonClone(ctx.workflow);
+    ctx.sourcePrompts=extractPromptTexts(ctx.basePrompt);
     ctx.plan=resolvedPlan;ctx.total=resolvedPlan.length;ctx.currentRun=0;
     ctx.results=[];ctx.selectedImageIndices={};ctx.page=0;ctx.durations=[];ctx.experimentStart=0;
     ctx.followLive=true;ctx.browseRunNumber=null;ctx.browseImageIndex=0;
@@ -864,16 +1001,15 @@ async function handleAction(ctx,button) {
       clearNodeOutputPreview(ctx.node,app);
       clearLivePreview(ctx);
       ctx.results=[];ctx.selectedImageIndices={};ctx.page=0;ctx.total=0;ctx.status='idle';
-      ctx.plan=[];ctx.basePrompt=null;ctx.currentRun=0;ctx.activeRunIndex=-1;
+      ctx.plan=[];ctx.basePrompt=null;ctx.sourcePrompts=null;ctx.currentRun=0;ctx.activeRunIndex=-1;
       ctx.activePromptId=null;ctx.liveStep=0;ctx.liveMax=0;ctx.livePhase='idle';
       ctx.experimentStart=0;ctx.durations=[];ctx.followLive=true;
       ctx.browseRunNumber=null;ctx.browseImageIndex=0;break;
     case 'follow-live':ctx.followLive=true;ctx.browseRunNumber=null;break;
     case 'prev-page':ctx.page=Math.max(0,ctx.page-1);break;
     case 'next-page':ctx.page+=1;break;
-    case 'export-json':exportJSON(ctx);return;
-    case 'export-csv':exportCSV(ctx);return;
     case 'export-grid':try {await exportGrid(ctx);} catch(e) {notice(ctx,e.message,'error');}return;
+    case 'export-xy':try {await exportXYPlot(ctx);} catch(e) {notice(ctx,e.message,'error');}return;
   }
   persist(ctx);render(ctx);
 }
@@ -936,6 +1072,8 @@ async function openStudio(node) {
       return;
     }
     if (c.dataset.presetSync !== undefined) { ctx.presetSync=c.checked;ctx.presetInspection=null;persist(ctx);render(ctx);return;}
+    if (c.dataset.xyAxis==='x') {ctx.xyXAxis=c.value;ctx.xyYAxis='';persist(ctx);render(ctx);return;}
+    if (c.dataset.xyAxis==='y') {ctx.xyYAxis=c.value;persist(ctx);render(ctx);return;}
     if (c.dataset.config) ctx[c.dataset.config]=c.dataset.config==='exportChars'?clampExportChars(c.value):c.value;
     if (c.dataset.axis!==undefined || c.dataset.ruleMode!==undefined || c.dataset.ruleValues!==undefined || c.dataset.ruleEnum!==undefined) ctx.presetInspection=null;
     if (c.dataset.axis!==undefined) {
