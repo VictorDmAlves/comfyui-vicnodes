@@ -14,7 +14,7 @@ The goal of these nodes was to replace those created by authors who, often, do n
 
 Due to the limitations of my machine, I only consider updates for models that I am currently able to run. Of course, feel free to fork the project and make your own updates.
 
-Currently, this package is ~80MB in size and is loading with ~0.2 seconds at my end.
+Currently, this package is ~100MB in size and is loading with ~0.2 seconds at my end.
 
 <!-- Nodes that include additional settings can be accessed via the menu `ComfyUI > Settings > OTHER > VicNodes` (none til this present moment). -->
 
@@ -37,12 +37,13 @@ This are the nodes created and compiled into this collection so far; to understa
 - [ComfyUI Smart Tile Upscaler](./modules/smart_tile_upscaler).
 - [ComfyUI Fast Groups Control](./modules/fast_groups_control).
 - [ComfyUI Video Tools](./modules/video_tools).
+- [ComfyUI Node Follow Path](./modules/node_follow_path).
 
 This package is used in all my [Workflows](https://github.com/VictorDmAlves/comfyui-workflows) that have a "+" symbol at the end of their name. These are Workflows I’ve been using for years, constantly adapted and always highly practical and efficient.
 
 ## Latest release
-### 1.1.3
-- Update ComfyUI Krea2 Smart Sampler and ComfyUI Experiment Studio nodes.
+### 1.1.4
+- Add the ComfyUI Node Follow Path node.
 
 # Installation
 
